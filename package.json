@@ -10,6 +10,7 @@
   "scripts": {
     "db:generate": "pnpm --filter @hoixi/db generate",
     "db:migrate": "pnpm --filter @hoixi/db migrate",
+    "db:push": "pnpm --filter @hoixi/db push",
     "db:studio": "pnpm --filter @hoixi/db studio",
     "bot:dev": "pnpm --filter @hoixi/bot dev",
     "bot:deploy": "pnpm --filter @hoixi/bot deploy",

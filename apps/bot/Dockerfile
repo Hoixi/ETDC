@@ -16,5 +16,6 @@ RUN corepack prepare pnpm@9.15.9 --activate \
 
 ENV NODE_ENV=production
 
-# Migrasyonları uygula, sonra botu başlat (tsx ile — workspace TS import'ları için).
-CMD ["sh", "-c", "pnpm --filter @hoixi/db migrate:deploy && pnpm --filter @hoixi/bot start"]
+# Şemayı DB'ye uygula (db push — migration dosyası gerektirmez), sonra botu başlat
+# (tsx ile — workspace TS import'ları için).
+CMD ["sh", "-c", "pnpm --filter @hoixi/db exec prisma db push --skip-generate && pnpm --filter @hoixi/bot start"]
