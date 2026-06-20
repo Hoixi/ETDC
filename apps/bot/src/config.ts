@@ -19,6 +19,8 @@ const schema = z.object({
   // Bot iç API (panel buradan canlı aksiyon çağırır)
   INTERNAL_API_KEY: z.string().optional(),
   BOT_API_PORT: z.coerce.number().default(3001),
+  // Sihirli giriş linki için panel adresi
+  PANEL_URL: z.string().default("https://panel.enterthedarkcarnival.com"),
   // Local'de 127.0.0.1; docker'da 0.0.0.0 (port DIŞARI açılmaz, sadece docker network).
   BOT_API_HOST: z.string().default("127.0.0.1"),
 

@@ -8,6 +8,8 @@ import {
   powerScore,
   itemLine,
   AFFIX,
+  makeLoginUrl,
+  panelButtonRow,
   type AffixType,
 } from "../features/arena/index.js";
 
@@ -51,7 +53,13 @@ const karakter: Command = {
       })
       .setFooter({ text: "Ekipmanı panelden değiştir: panel.enterthedarkcarnival.com/arena" });
 
-    await interaction.reply({ embeds: [embed], flags: user.id === interaction.user.id ? undefined : MessageFlags.Ephemeral });
+    const self = user.id === interaction.user.id;
+    const url = self ? makeLoginUrl(interaction.user.id, interaction.guild.id, interaction.user.username) : null;
+    await interaction.reply({
+      embeds: [embed],
+      components: url ? [panelButtonRow(url)] : [],
+      flags: self ? undefined : MessageFlags.Ephemeral,
+    });
   },
 };
 

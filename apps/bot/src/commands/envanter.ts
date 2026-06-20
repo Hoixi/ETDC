@@ -2,7 +2,7 @@
 import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from "discord.js";
 import { prisma } from "@hoixi/db";
 import type { Command } from "../types.js";
-import { getPlayer, itemLine, RARITY_ORDER } from "../features/arena/index.js";
+import { getPlayer, itemLine, RARITY_ORDER, makeLoginUrl, panelButtonRow } from "../features/arena/index.js";
 
 const MAX_SHOWN = 12;
 
@@ -40,7 +40,12 @@ const envanter: Command = {
         text: items.length > MAX_SHOWN ? `…ve ${items.length - MAX_SHOWN} eşya daha · tümü panelde: panel.enterthedarkcarnival.com/arena` : "Eşyalarını panelden giy: panel.enterthedarkcarnival.com/arena",
       });
 
-    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    const url = makeLoginUrl(interaction.user.id, interaction.guild.id, interaction.user.username);
+    await interaction.reply({
+      embeds: [embed],
+      components: url ? [panelButtonRow(url)] : [],
+      flags: MessageFlags.Ephemeral,
+    });
   },
 };
 

@@ -3,6 +3,7 @@ import { prisma, type ArenaItem, type ArenaPlayer, type Rarity, type ItemSlot } 
 import { RARITY, SLOT, AFFIX, type Affix, type AffixType } from "./rarity.js";
 
 export { generateItem, type GeneratedItem } from "./items.js";
+export { makeLoginUrl, panelButtonRow } from "./magicLink.js";
 export * from "./rarity.js";
 
 export const GRIND_MS = 60 * 60 * 1000; // 1 saat

@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@hoixi/db";
-import { checkMember } from "@/lib/guard";
+import { getArenaIdentity } from "@/lib/arenaAuth";
 
 // Body: { itemId, action: "equip" | "unequip" }
 export async function POST(req: Request, { params }: { params: { guildId: string } }) {
-  const member = await checkMember(params.guildId);
-  if (!member) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+  const id = await getArenaIdentity(params.guildId);
+  if (!id) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
   const { itemId, action } = (await req.json()) as { itemId?: string; action?: string };
   if (!itemId) return NextResponse.json({ error: "itemId gerekli" }, { status: 400 });
 
   const item = await prisma.arenaItem.findUnique({ where: { id: itemId } });
-  if (!item || item.guildId !== params.guildId || item.userId !== member.discordId) {
+  if (!item || item.guildId !== params.guildId || item.userId !== id.discordId) {
     return NextResponse.json({ error: "Eşya bulunamadı" }, { status: 404 });
   }
 
@@ -23,7 +23,7 @@ export async function POST(req: Request, { params }: { params: { guildId: string
   // Equip: aynı slottaki diğer eşyayı çıkar, sonra bunu giy.
   await prisma.$transaction([
     prisma.arenaItem.updateMany({
-      where: { guildId: params.guildId, userId: member.discordId, slot: item.slot, equipped: true },
+      where: { guildId: params.guildId, userId: id.discordId, slot: item.slot, equipped: true },
       data: { equipped: false },
     }),
     prisma.arenaItem.update({ where: { id: itemId }, data: { equipped: true } }),

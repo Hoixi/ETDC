@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/guard";
+import { readArenaSession } from "@/lib/arenaAuth";
 import { signOut } from "@/auth";
 import { getUserGuilds, guildIconUrl } from "@/lib/discord";
 import { botApi } from "@/lib/botApi";
@@ -7,6 +9,10 @@ import { botApi } from "@/lib/botApi";
 export const dynamic = "force-dynamic";
 
 export default async function ArenaHome() {
+  // Şifresiz cookie varsa direkt karaktere git.
+  const arenaSess = readArenaSession();
+  if (arenaSess) redirect(`/arena/${arenaSess.guildId}`);
+
   const session = await requireSession();
   const guilds = await getUserGuilds(session.accessToken!);
 
