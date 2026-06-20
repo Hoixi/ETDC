@@ -41,7 +41,9 @@ plugins:
     oauth:
       enabled: true
       refreshToken: "${PLUGINS_YOUTUBE_OAUTH_REFRESHTOKEN:}"
+    # TV = tek OAuth-uyumlu client; token'ı asıl kullanan bu. Başta olmalı.
     clients:
+      - TV
       - MUSIC
       - WEB
       - WEBEMBEDDED
