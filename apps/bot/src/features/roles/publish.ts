@@ -10,6 +10,20 @@ import { buildPanelMessage } from "./render.js";
 
 export class PanelPublishError extends Error {}
 
+// Discord API hatalarını anlaşılır Türkçe mesaja çevir.
+function friendlyDiscordError(err: DiscordAPIError): string {
+  switch (Number(err.code)) {
+    case 50013:
+      return "Botun bu kanalda **mesaj gönderme / embed bağlama** izni yok. Kanal izinlerini kontrol et (kurallar kanalı genelde kilitlidir).";
+    case 50001:
+      return "Bot bu kanalı göremiyor (**Kanalı Görüntüle** izni yok).";
+    case 50035:
+      return "Mesaj geçersiz: boş buton etiketi, geçersiz emoji ya da hatalı görsel URL olabilir.";
+    default:
+      return `Discord hatası (${err.code}): ${err.message}`;
+  }
+}
+
 async function loadPanel(panelId: string) {
   const panel = await prisma.rolePanel.findUnique({
     where: { id: panelId },
@@ -51,17 +65,28 @@ export async function publishPanel(
       }
       return edited;
     } catch (err) {
-      // Mesaj silinmiş (Unknown Message) → yeniden gönder. Başka hatayı yükselt.
-      if (!(err instanceof DiscordAPIError && err.code === 10008)) throw err;
+      // Mesaj silinmiş (Unknown Message) → yeniden gönder.
+      if (err instanceof DiscordAPIError && err.code === 10008) {
+        // aşağıdaki send'e düş
+      } else if (err instanceof DiscordAPIError) {
+        throw new PanelPublishError(friendlyDiscordError(err));
+      } else {
+        throw err;
+      }
     }
   }
 
-  const sent = await channel.send(payload);
-  await prisma.rolePanel.update({
-    where: { id: panelId },
-    data: { messageId: sent.id, channelId },
-  });
-  return sent;
+  try {
+    const sent = await channel.send(payload);
+    await prisma.rolePanel.update({
+      where: { id: panelId },
+      data: { messageId: sent.id, channelId },
+    });
+    return sent;
+  } catch (err) {
+    if (err instanceof DiscordAPIError) throw new PanelPublishError(friendlyDiscordError(err));
+    throw err;
+  }
 }
 
 /** Panel mesajını Discord'dan ve kaydı DB'den siler. */
