@@ -1,9 +1,11 @@
 // Karnaval Arenası — oyuncu/DB yardımcıları, XP/level, embed biçimleyiciler.
 import { prisma, type ArenaItem, type ArenaPlayer, type Rarity, type ItemSlot } from "@hoixi/db";
 import { RARITY, SLOT, AFFIX, type Affix, type AffixType } from "./rarity.js";
+import { buildFighter, type Fighter } from "./combat.js";
 
 export { generateItem, type GeneratedItem } from "./items.js";
 export { makeLoginUrl, panelButtonRow } from "./magicLink.js";
+export { buildFighter, buildMonster, battle, winChance, type Fighter, type BattleResult } from "./combat.js";
 export * from "./rarity.js";
 
 export const GRIND_MS = 60 * 60 * 1000; // 1 saat
@@ -132,6 +134,18 @@ export function aggregateStats(items: ArenaItem[]): StatTotals {
     }
   }
   return t;
+}
+
+// Bir oyuncunun giyili ekipmanından dövüşçü kur.
+export async function loadFighter(
+  guildId: string,
+  userId: string,
+  name: string,
+): Promise<{ player: ArenaPlayer; fighter: Fighter }> {
+  const player = await getPlayer(guildId, userId);
+  const equipped = await prisma.arenaItem.findMany({ where: { guildId, userId, equipped: true } });
+  const fighter = buildFighter(name, player.level, aggregateStats(equipped));
+  return { player, fighter };
 }
 
 export function powerScore(t: StatTotals): number {
