@@ -31,8 +31,7 @@ services:
       LAVALINK_SERVER_PASSWORD: ${LAVALINK_PASSWORD}
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
-    volumes:
-      - lavalink_plugins:/opt/Lavalink/plugins
+    # Plugin'ler açılışta imajın yazılabilir ./plugins klasörüne iner (volume yok → izin sorunu yok).
     expose:
       - "2333"
 
@@ -87,4 +86,3 @@ services:
 
 volumes:
   postgres_data:
-  lavalink_plugins:
