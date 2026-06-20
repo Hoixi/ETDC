@@ -4,6 +4,7 @@ import {
   RARITY,
   RARITY_ORDER,
   SLOT,
+  DROP_SLOTS,
   EPITHETS,
   AFFIX,
   AFFIX_POOL,
@@ -32,7 +33,13 @@ function rollRarity(luck: number): Rarity {
 }
 
 function rollSlot(): ItemSlot {
-  return pick([ItemSlot.WEAPON, ItemSlot.HEAD, ItemSlot.BODY, ItemSlot.ACCESSORY]);
+  const total = DROP_SLOTS.reduce((s, e) => s + e.weight, 0);
+  let roll = Math.random() * total;
+  for (const e of DROP_SLOTS) {
+    roll -= e.weight;
+    if (roll <= 0) return e.slot;
+  }
+  return ItemSlot.WEAPON;
 }
 
 export function rollAffixes(count: number, iLvl: number): Affix[] {

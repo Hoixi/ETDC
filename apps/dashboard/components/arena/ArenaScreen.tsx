@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  RARITY, SLOT, SLOT_ORDER, AFFIX, RARITY_ORDER,
+  RARITY, SLOT, EQUIP_MAIN, EQUIP_ACC, AFFIX, RARITY_ORDER,
   aggregateStats, powerScore,
-  type PlainItem, type Slot, type AffixType,
+  type PlainItem, type Slot, type AffixType, type EquipCell,
 } from "@/lib/arena";
 
 const STAT_CAP: Record<string, number> = { atk: 400, def: 300, hp: 3000, spd: 200, luck: 150 };
@@ -31,7 +31,7 @@ export function ArenaScreen({
   const router = useRouter();
   const [items, setItems] = useState<PlainItem[]>(initial);
   const [busy, setBusy] = useState(false);
-  const [over, setOver] = useState<Slot | null>(null);
+  const [over, setOver] = useState<string | null>(null); // sürüklenen kutu key'i
   const [tok, setTok] = useState(tokens);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
@@ -72,22 +72,39 @@ export function ArenaScreen({
     ),
     [items],
   );
+  // Tekli slotlar için slot→item; yüzükler için ayrı (en fazla 2, kararlı sıra).
   const bySlot = useMemo(() => {
     const m: Partial<Record<Slot, PlainItem>> = {};
-    for (const it of equipped) m[it.slot] = it;
+    for (const it of equipped) if (it.slot !== "RING") m[it.slot] = it;
     return m;
   }, [equipped]);
+  const equippedRings = useMemo(
+    () => equipped.filter((i) => i.slot === "RING").sort((a, b) => a.createdAt - b.createdAt),
+    [equipped],
+  );
+  // Bir paper-doll kutusunun gösterdiği item.
+  const cellItem = (c: EquipCell): PlainItem | undefined =>
+    c.ringIndex != null ? equippedRings[c.ringIndex] : bySlot[c.slot];
   const stats = useMemo(() => aggregateStats(equipped), [equipped]);
   const power = useMemo(() => powerScore(stats), [stats]);
 
   async function api(itemId: string, action: "equip" | "unequip") {
     setBusy(true);
+    // İyimser güncelleme (sunucu mantığını yansıtır: yüzük max 2, diğerleri 1).
     setItems((prev) => {
       const target = prev.find((x) => x.id === itemId);
       if (!target) return prev;
+      if (action === "unequip") {
+        return prev.map((it) => (it.id === itemId ? { ...it, equipped: false } : it));
+      }
+      const max = target.slot === "RING" ? 2 : 1;
+      const others = prev
+        .filter((x) => x.slot === target.slot && x.equipped && x.id !== itemId)
+        .sort((a, b) => a.createdAt - b.createdAt);
+      const remove = new Set(others.slice(0, Math.max(0, others.length - (max - 1))).map((x) => x.id));
       return prev.map((it) => {
-        if (it.id === itemId) return { ...it, equipped: action === "equip" };
-        if (action === "equip" && it.slot === target.slot) return { ...it, equipped: false };
+        if (it.id === itemId) return { ...it, equipped: true };
+        if (remove.has(it.id)) return { ...it, equipped: false };
         return it;
       });
     });
@@ -111,6 +128,41 @@ export function ArenaScreen({
     const id = e.dataTransfer.getData("text/plain");
     const it = items.find((x) => x.id === id);
     if (it && it.slot === slot && !it.equipped) api(id, "equip");
+  }
+
+  // Tek bir paper-doll kutusu (ana ekipman veya takı; yüzük kutuları için ringIndex'li).
+  function renderCell(c: EquipCell) {
+    const it = cellItem(c);
+    const isOver = over === c.key;
+    const label =
+      c.ringIndex != null ? `${SLOT.RING.label} ${c.ringIndex + 1}` : SLOT[c.slot].label;
+    return (
+      <div
+        key={c.key}
+        onDragOver={(e) => { e.preventDefault(); setOver(c.key); }}
+        onDragLeave={() => setOver((s) => (s === c.key ? null : s))}
+        onDrop={(e) => onDrop(c.slot, e)}
+        onClick={() => it && !busy && api(it.id, "unequip")}
+        className={`min-h-[92px] rounded-lg border p-3 transition ${
+          it ? "cursor-pointer bg-bg-soft hover:border-red-500" : "border-dashed bg-transparent"
+        } ${isOver ? "border-neon-pink shadow-neon" : ""}`}
+        style={it ? { borderColor: RARITY[it.rarity].color } : { borderColor: "#33214d" }}
+        title={it ? "Çıkarmak için tıkla" : ""}
+      >
+        <div className="mb-1 text-[11px] text-gray-500">{SLOT[c.slot].icon} {label}</div>
+        {it ? (
+          <>
+            <div className="text-sm font-medium text-white">{it.name}{it.upgrade > 0 ? ` +${it.upgrade}` : ""}</div>
+            <RarityChip item={it} />
+            <div className="mt-1 text-[11px] text-gray-400">{primText(it)}</div>
+            {it.affixes.length > 0 && <div className="text-[11px] text-neon-cyan">{affixText(it)}</div>}
+            {it.passive && <div className="text-[11px] text-neon-gold">✨ {it.passive}</div>}
+          </>
+        ) : (
+          <div className="flex h-12 items-center justify-center text-xs text-gray-600">buraya sürükle</div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -137,39 +189,13 @@ export function ArenaScreen({
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Ekipman */}
         <section className="card">
-          <h2 className="mb-3 text-sm font-medium text-neon-purple">Ekipman</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {SLOT_ORDER.map((slot) => {
-              const it = bySlot[slot];
-              const isOver = over === slot;
-              return (
-                <div
-                  key={slot}
-                  onDragOver={(e) => { e.preventDefault(); setOver(slot); }}
-                  onDragLeave={() => setOver((s) => (s === slot ? null : s))}
-                  onDrop={(e) => onDrop(slot, e)}
-                  onClick={() => it && !busy && api(it.id, "unequip")}
-                  className={`min-h-[92px] rounded-lg border p-3 transition ${
-                    it ? "cursor-pointer bg-bg-soft hover:border-red-500" : "border-dashed bg-transparent"
-                  } ${isOver ? "border-neon-pink shadow-neon" : ""}`}
-                  style={it ? { borderColor: RARITY[it.rarity].color } : { borderColor: "#33214d" }}
-                  title={it ? "Çıkarmak için tıkla" : ""}
-                >
-                  <div className="mb-1 text-[11px] text-gray-500">{SLOT[slot].icon} {SLOT[slot].label}</div>
-                  {it ? (
-                    <>
-                      <div className="text-sm font-medium text-white">{it.name}{it.upgrade > 0 ? ` +${it.upgrade}` : ""}</div>
-                      <RarityChip item={it} />
-                      <div className="mt-1 text-[11px] text-gray-400">{primText(it)}</div>
-                      {it.affixes.length > 0 && <div className="text-[11px] text-neon-cyan">{affixText(it)}</div>}
-                      {it.passive && <div className="text-[11px] text-neon-gold">✨ {it.passive}</div>}
-                    </>
-                  ) : (
-                    <div className="flex h-12 items-center justify-center text-xs text-gray-600">buraya sürükle</div>
-                  )}
-                </div>
-              );
-            })}
+          <h2 className="mb-3 text-sm font-medium text-neon-purple">Ana Ekipman</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {EQUIP_MAIN.map(renderCell)}
+          </div>
+          <h2 className="mb-3 mt-4 text-sm font-medium text-neon-gold">Takı</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {EQUIP_ACC.map(renderCell)}
           </div>
         </section>
 

@@ -37,31 +37,95 @@ export interface SlotDef {
 }
 
 export const SLOT: Record<ItemSlot, SlotDef> = {
+  // --- Ana ekipman (6) ---
   [ItemSlot.WEAPON]: {
     label: "Silah",
     emoji: "🗡️",
     weights: { atk: 8, def: 0, hp: 0, spd: 2, luck: 0 },
     names: ["Paslı Bıçak", "Palyaço Şişi", "Kanlı Balta", "Cam Kırığı Hançer", "Çırpı Sopası", "İp Cambazı Kamçısı"],
   },
-  [ItemSlot.HEAD]: {
-    label: "Kafa",
+  [ItemSlot.OFFHAND]: {
+    label: "Alt silah",
+    emoji: "🛡️",
+    weights: { atk: 3, def: 5, hp: 1, spd: 1, luck: 0 },
+    names: ["Çatlak Kalkan", "Yedek Hançer", "Tahta Tepsi", "Kırık Çember", "Meşale", "Zincir Topuz"],
+  },
+  [ItemSlot.HELMET]: {
+    label: "Kask",
     emoji: "🎭",
     weights: { atk: 0, def: 5, hp: 3, spd: 0, luck: 2 },
     names: ["Çatlak Maske", "Sivri Külah", "Sis Şapkası", "Kırık Gözlük", "Palyaço Perukası"],
   },
-  [ItemSlot.BODY]: {
-    label: "Gövde",
+  [ItemSlot.ARMOR]: {
+    label: "Zırh",
     emoji: "🧥",
     weights: { atk: 0, def: 4, hp: 6, spd: 0, luck: 0 },
     names: ["Yırtık Pelerin", "Çizgili Yelek", "Zincirli Korse", "Eski Frak", "Pullu Kostüm"],
   },
-  [ItemSlot.ACCESSORY]: {
-    label: "Aksesuar",
+  [ItemSlot.GLOVES]: {
+    label: "Eldiven",
+    emoji: "🧤",
+    weights: { atk: 4, def: 2, hp: 0, spd: 4, luck: 0 },
+    names: ["Yırtık Eldiven", "Cambaz Sargısı", "Demir Yumruk", "İpek Eldiven", "Dikenli Kavrama"],
+  },
+  [ItemSlot.BOOTS]: {
+    label: "Ayakkabı",
+    emoji: "🥾",
+    weights: { atk: 0, def: 2, hp: 1, spd: 6, luck: 1 },
+    names: ["Delik Bot", "Cambaz Patiği", "Yaylı Pabuç", "Demir Çizme", "Sessiz Terlik"],
+  },
+  // --- Takı (4) ---
+  [ItemSlot.NECKLACE]: {
+    label: "Kolye",
+    emoji: "📿",
+    weights: { atk: 1, def: 1, hp: 4, spd: 1, luck: 5 },
+    names: ["Altın Düdük", "Cam Küre", "Uğurlu Madalyon", "Lanetli Tılsım", "Kemik Kolye"],
+  },
+  [ItemSlot.RING]: {
+    label: "Yüzük",
     emoji: "💍",
-    weights: { atk: 1, def: 1, hp: 1, spd: 4, luck: 6 },
-    names: ["Altın Düdük", "Cam Küre", "Uğurlu Jeton", "Kırık Ayna", "Tılsımlı Bilezik"],
+    weights: { atk: 3, def: 2, hp: 1, spd: 2, luck: 4 },
+    names: ["Kırık Yüzük", "Pirinç Halka", "Uğurlu Yüzük", "Gözyaşı Taşı", "Karanlık Mühür"],
+  },
+  [ItemSlot.EARRING]: {
+    label: "Küpe",
+    emoji: "🦻",
+    weights: { atk: 1, def: 0, hp: 1, spd: 4, luck: 6 },
+    names: ["Çıngırak Küpe", "Cam Damla", "Uğurlu Halka", "Tüy Küpe", "Kıvılcım Taşı"],
+  },
+  // --- Eski slotlar (remap edildi; envanterde kalmış olabilecek eski item'lar yeni etiketle görünsün) ---
+  [ItemSlot.HEAD]: {
+    label: "Kask",
+    emoji: "🎭",
+    weights: { atk: 0, def: 5, hp: 3, spd: 0, luck: 2 },
+    names: ["Çatlak Maske"],
+  },
+  [ItemSlot.BODY]: {
+    label: "Zırh",
+    emoji: "🧥",
+    weights: { atk: 0, def: 4, hp: 6, spd: 0, luck: 0 },
+    names: ["Yırtık Pelerin"],
+  },
+  [ItemSlot.ACCESSORY]: {
+    label: "Kolye",
+    emoji: "📿",
+    weights: { atk: 1, def: 1, hp: 4, spd: 1, luck: 5 },
+    names: ["Altın Düdük"],
   },
 };
+
+// Drop'larda üretilebilecek aktif slotlar (eski slotlar hariç). RING iki kez giyilebildiği için ağırlığı yüksek.
+export const DROP_SLOTS: { slot: ItemSlot; weight: number }[] = [
+  { slot: ItemSlot.WEAPON, weight: 12 },
+  { slot: ItemSlot.OFFHAND, weight: 10 },
+  { slot: ItemSlot.HELMET, weight: 11 },
+  { slot: ItemSlot.ARMOR, weight: 11 },
+  { slot: ItemSlot.GLOVES, weight: 10 },
+  { slot: ItemSlot.BOOTS, weight: 10 },
+  { slot: ItemSlot.NECKLACE, weight: 8 },
+  { slot: ItemSlot.RING, weight: 16 },
+  { slot: ItemSlot.EARRING, weight: 8 },
+];
 
 // Yüksek nadirlik için isim ön eki (havalı dursun).
 export const EPITHETS = [

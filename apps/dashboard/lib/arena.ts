@@ -2,7 +2,11 @@
 import type { ArenaItem } from "@hoixi/db";
 
 export type Rarity = "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
-export type Slot = "WEAPON" | "HEAD" | "BODY" | "ACCESSORY";
+export type Slot =
+  | "WEAPON" | "OFFHAND" | "HELMET" | "ARMOR" | "GLOVES" | "BOOTS"
+  | "NECKLACE" | "RING" | "EARRING"
+  // eski slotlar (remap edildi ama tip güvenliği için tutulur)
+  | "HEAD" | "BODY" | "ACCESSORY";
 
 export const RARITY_ORDER: Rarity[] = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"];
 
@@ -16,11 +20,40 @@ export const RARITY: Record<Rarity, { label: string; color: string }> = {
 
 export const SLOT: Record<Slot, { label: string; icon: string }> = {
   WEAPON: { label: "Silah", icon: "🗡️" },
-  HEAD: { label: "Kafa", icon: "🎭" },
-  BODY: { label: "Gövde", icon: "🧥" },
-  ACCESSORY: { label: "Aksesuar", icon: "💍" },
+  OFFHAND: { label: "Alt silah", icon: "🛡️" },
+  HELMET: { label: "Kask", icon: "🎭" },
+  ARMOR: { label: "Zırh", icon: "🧥" },
+  GLOVES: { label: "Eldiven", icon: "🧤" },
+  BOOTS: { label: "Ayakkabı", icon: "🥾" },
+  NECKLACE: { label: "Kolye", icon: "📿" },
+  RING: { label: "Yüzük", icon: "💍" },
+  EARRING: { label: "Küpe", icon: "🦻" },
+  // eski (remap)
+  HEAD: { label: "Kask", icon: "🎭" },
+  BODY: { label: "Zırh", icon: "🧥" },
+  ACCESSORY: { label: "Kolye", icon: "📿" },
 };
-export const SLOT_ORDER: Slot[] = ["WEAPON", "HEAD", "BODY", "ACCESSORY"];
+
+// Paper-doll giyme yerleşimi. RING iki kez görünür (Yüzük 1 / Yüzük 2) ama item slotu tek "RING".
+export interface EquipCell {
+  key: string; // benzersiz kutu kimliği (RING1/RING2 ayrımı için)
+  slot: Slot;
+  ringIndex?: number; // 0 veya 1 → giyili yüzüklerden hangisi
+}
+export const EQUIP_MAIN: EquipCell[] = [
+  { key: "WEAPON", slot: "WEAPON" },
+  { key: "OFFHAND", slot: "OFFHAND" },
+  { key: "HELMET", slot: "HELMET" },
+  { key: "ARMOR", slot: "ARMOR" },
+  { key: "GLOVES", slot: "GLOVES" },
+  { key: "BOOTS", slot: "BOOTS" },
+];
+export const EQUIP_ACC: EquipCell[] = [
+  { key: "NECKLACE", slot: "NECKLACE" },
+  { key: "RING1", slot: "RING", ringIndex: 0 },
+  { key: "RING2", slot: "RING", ringIndex: 1 },
+  { key: "EARRING", slot: "EARRING" },
+];
 
 export type AffixType =
   | "crit" | "critDmg" | "lifesteal" | "dodge"
@@ -55,6 +88,7 @@ export interface PlainItem {
   passive: string | null;
   upgrade: number;
   equipped: boolean;
+  createdAt: number; // ms — iki yüzüğü kararlı sıralamak için
 }
 
 export function toPlain(it: ArenaItem): PlainItem {
@@ -69,6 +103,7 @@ export function toPlain(it: ArenaItem): PlainItem {
     passive: it.passive,
     upgrade: it.upgrade,
     equipped: it.equipped,
+    createdAt: it.createdAt.getTime(),
   };
 }
 

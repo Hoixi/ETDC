@@ -20,12 +20,20 @@ export async function POST(req: Request, { params }: { params: { guildId: string
     return NextResponse.json({ ok: true });
   }
 
-  // Equip: aynı slottaki diğer eşyayı çıkar, sonra bunu giy.
+  // Yüzük 2 slota giyilebilir, diğer slotlar tek. Kapasite dolu ise en eski giyili olanı çıkar.
+  const max = item.slot === "RING" ? 2 : 1;
+  const equipped = await prisma.arenaItem.findMany({
+    where: { guildId: params.guildId, userId: id.discordId, slot: item.slot, equipped: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const others = equipped.filter((x) => x.id !== itemId);
+  // Yeni eşya için yer aç: max-1 kadar yer kalacak şekilde en eskileri çıkar.
+  const toRemove = others.slice(0, Math.max(0, others.length - (max - 1)));
+
   await prisma.$transaction([
-    prisma.arenaItem.updateMany({
-      where: { guildId: params.guildId, userId: id.discordId, slot: item.slot, equipped: true },
-      data: { equipped: false },
-    }),
+    ...(toRemove.length
+      ? [prisma.arenaItem.updateMany({ where: { id: { in: toRemove.map((x) => x.id) } }, data: { equipped: false } })]
+      : []),
     prisma.arenaItem.update({ where: { id: itemId }, data: { equipped: true } }),
   ]);
   return NextResponse.json({ ok: true });

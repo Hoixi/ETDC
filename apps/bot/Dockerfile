@@ -18,4 +18,4 @@ ENV NODE_ENV=production
 
 # Şemayı DB'ye uygula (db push — migration dosyası gerektirmez), sonra botu başlat
 # (tsx ile — workspace TS import'ları için).
-CMD ["sh", "-c", "pnpm --filter @hoixi/db exec prisma db push --skip-generate && pnpm --filter @hoixi/bot start"]
+CMD ["sh", "-c", "pnpm --filter @hoixi/db exec prisma db push --skip-generate && pnpm --filter @hoixi/db exec prisma db execute --schema ./prisma/schema.prisma --file ./prisma/remap-slots.sql && pnpm --filter @hoixi/bot start"]

@@ -168,7 +168,20 @@ enum Rarity {
 }
 
 enum ItemSlot {
-  WEAPON
+  // Ana ekipman (6)
+  WEAPON // Silah
+  OFFHAND // Alt silah
+  HELMET // Kask
+  ARMOR // Zırh
+  GLOVES // Eldiven
+  BOOTS // Ayakkabı
+  // Takı (4 giyme slotu: RING iki kez giyilebilir → Yüzük 1 + Yüzük 2)
+  NECKLACE // Kolye
+  RING // Yüzük
+  EARRING // Küpe
+  // --- Eski slotlar ---
+  // remap-slots.sql ile HEAD→HELMET, BODY→ARMOR, ACCESSORY→NECKLACE'e taşınır.
+  // Enum'dan SİLİNMEDİ: db push'un yıkıcı enum yeniden-oluşturmasını (data-loss) tetiklememesi için.
   HEAD
   BODY
   ACCESSORY
