@@ -8,30 +8,44 @@
 
 body {
   @apply bg-bg text-gray-200;
+  background-image:
+    radial-gradient(900px 500px at 15% -10%, rgba(166, 77, 255, 0.12), transparent),
+    radial-gradient(800px 500px at 100% 0%, rgba(255, 46, 151, 0.1), transparent);
+  background-attachment: fixed;
 }
 
-/* Form elemanları için ortak stiller */
 @layer components {
   .input {
     @apply w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm text-gray-100
-           outline-none transition focus:border-accent;
+           outline-none transition focus:border-accent focus:shadow-neon;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm
-           font-medium text-white transition hover:bg-accent-hover disabled:opacity-50;
+           font-medium text-white shadow-neon transition hover:bg-accent-hover disabled:opacity-50;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-bg-soft
-           px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-bg-hover;
+           px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-neon-purple hover:bg-bg-hover;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm
            font-medium text-white transition hover:bg-red-500;
   }
   .card {
-    @apply rounded-xl border border-border bg-bg-card p-5;
+    @apply rounded-xl border border-border bg-bg-card p-5 shadow-card;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-gray-300;
   }
+  /* Karnaval başlık — display font + neon glow */
+  .neon-title {
+    @apply font-display tracking-wide text-neon-pink;
+    text-shadow: 0 0 8px rgba(255, 46, 151, 0.6), 0 0 22px rgba(255, 46, 151, 0.35);
+  }
 }
+
+/* Neon scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #140d20; }
+::-webkit-scrollbar-thumb { background: #3a2358; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #5a3488; }

@@ -107,6 +107,42 @@ export interface ItemLike {
   upgrade?: number;
 }
 
+// ---- Stat toplama (giyili eşyalardan) ----
+export interface StatTotals {
+  atk: number;
+  def: number;
+  hp: number;
+  spd: number;
+  luck: number;
+  affixes: Partial<Record<AffixType, number>>;
+}
+
+export function aggregateStats(items: ArenaItem[]): StatTotals {
+  const t: StatTotals = { atk: 0, def: 0, hp: 0, spd: 0, luck: 0, affixes: {} };
+  for (const it of items) {
+    const mult = 1 + it.upgrade * 0.05; // +1 yükseltme = %5 stat
+    t.atk += Math.round(it.atk * mult);
+    t.def += Math.round(it.def * mult);
+    t.hp += Math.round(it.hp * mult);
+    t.spd += Math.round(it.spd * mult);
+    t.luck += Math.round(it.luck * mult);
+    for (const a of parseAffixes(it.affixes)) {
+      t.affixes[a.type] = (t.affixes[a.type] ?? 0) + a.value;
+    }
+  }
+  return t;
+}
+
+export function powerScore(t: StatTotals): number {
+  const a = t.affixes;
+  return Math.round(
+    t.atk * 1 + t.def * 0.8 + t.hp * 0.12 + t.spd * 0.6 + t.luck * 0.3 +
+      (a.crit ?? 0) * 2 + (a.critDmg ?? 0) * 0.5 + (a.lifesteal ?? 0) * 1.5 +
+      (a.dodge ?? 0) * 1.5 + (a.dmgReduction ?? 0) * 1.8 + (a.penetration ?? 0) * 1.2 +
+      (a.thorns ?? 0) * 1 + (a.regen ?? 0) * 0.5,
+  );
+}
+
 // Bir item'i tek satır özetle.
 export function itemLine(item: ItemLike): string {
   const slot = SLOT[item.slot];
