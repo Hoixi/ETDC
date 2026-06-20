@@ -9,9 +9,9 @@ import {
   itemLine,
   RARITY,
   RARITY_ORDER,
-  DROPS_PER_SESSION,
   type GeneratedItem,
 } from "../features/arena/index.js";
+import { getArenaConfig } from "../lib/guildConfig.js";
 
 const ts = (d: Date) => `<t:${Math.floor(d.getTime() / 1000)}:R>`;
 
@@ -38,8 +38,9 @@ const topla: Command = {
 
     await interaction.deferReply();
 
-    // Ganimet üret (iLvl player level'a göre ölçeklenir).
-    const drops: GeneratedItem[] = Array.from({ length: DROPS_PER_SESSION }, () =>
+    // Ganimet üret (iLvl player level'a göre ölçeklenir, adet panelden ayarlı).
+    const cfg = await getArenaConfig(guild.id);
+    const drops: GeneratedItem[] = Array.from({ length: cfg.dropsPerSession }, () =>
       generateItem(player.level),
     );
 

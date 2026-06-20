@@ -18,6 +18,7 @@ model Guild {
   musicConfig   Json? // {djRoleId, defaultVolume, maxQueue}
   logConfig     Json? // {joinLeave, modLog, messageLog} -> channelId'ler
   streamConfig  Json? // {enabled, kickChannel, discordChannelId, pingRoleId, pollSec}
+  arenaConfig   Json? // {enabled, grindMinutes, dropsPerSession}
   createdAt     DateTime @default(now())
 
   rolePanels  RolePanel[]

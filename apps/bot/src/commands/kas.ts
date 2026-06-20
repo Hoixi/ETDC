@@ -2,7 +2,8 @@
 import { SlashCommandBuilder, MessageFlags } from "discord.js";
 import { prisma } from "@hoixi/db";
 import type { Command } from "../types.js";
-import { getPlayer, GRIND_MS } from "../features/arena/index.js";
+import { getPlayer } from "../features/arena/index.js";
+import { getArenaConfig } from "../lib/guildConfig.js";
 
 const ts = (d: Date) => `<t:${Math.floor(d.getTime() / 1000)}:R>`;
 
@@ -14,6 +15,11 @@ const kas: Command = {
 
   async execute(interaction) {
     if (!interaction.inCachedGuild()) return;
+    const cfg = await getArenaConfig(interaction.guild.id);
+    if (!cfg.enabled) {
+      await interaction.reply({ content: "🎪 Arena bu sunucuda kapalı.", flags: MessageFlags.Ephemeral });
+      return;
+    }
     const player = await getPlayer(interaction.guild.id, interaction.user.id);
     const now = Date.now();
 
@@ -32,7 +38,7 @@ const kas: Command = {
       return;
     }
 
-    const endsAt = new Date(now + GRIND_MS);
+    const endsAt = new Date(now + cfg.grindMinutes * 60_000);
     await prisma.arenaPlayer.update({
       where: { guildId_userId: { guildId: interaction.guild.id, userId: interaction.user.id } },
       data: { grindEndsAt: endsAt, grindCollected: false },

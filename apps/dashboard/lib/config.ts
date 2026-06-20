@@ -36,6 +36,11 @@ export interface StreamConfig {
   pingRoleId: string | null;
   pollSec: number;
 }
+export interface ArenaConfig {
+  enabled: boolean;
+  grindMinutes: number;
+  dropsPerSession: number;
+}
 
 export const DEFAULTS = {
   welcomeConfig: {
@@ -78,6 +83,11 @@ export const DEFAULTS = {
     pingRoleId: null,
     pollSec: 120,
   } as StreamConfig,
+  arenaConfig: {
+    enabled: true,
+    grindMinutes: 60,
+    dropsPerSession: 6,
+  } as ArenaConfig,
 };
 
 export type ConfigSection = keyof typeof DEFAULTS;

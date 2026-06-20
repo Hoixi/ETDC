@@ -51,6 +51,12 @@ export interface StreamConfig {
   pollSec: number; // kontrol aralığı (saniye)
 }
 
+export interface ArenaConfig {
+  enabled: boolean;
+  grindMinutes: number; // kasma oturum süresi (dakika)
+  dropsPerSession: number; // oturum başına drop sayısı
+}
+
 export const DEFAULT_WELCOME: WelcomeConfig = {
   enabled: false,
   channelId: null,
@@ -99,6 +105,12 @@ export const DEFAULT_STREAM: StreamConfig = {
   discordChannelId: null,
   pingRoleId: null,
   pollSec: 120,
+};
+
+export const DEFAULT_ARENA: ArenaConfig = {
+  enabled: true,
+  grindMinutes: 60,
+  dropsPerSession: 6,
 };
 
 // Saklanan (kısmi/eski) JSON'ı default'la birleştir — eksik alanlar default'tan gelir.

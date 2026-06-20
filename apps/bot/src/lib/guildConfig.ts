@@ -7,6 +7,7 @@ import {
   DEFAULT_LOG,
   DEFAULT_MUSIC,
   DEFAULT_STREAM,
+  DEFAULT_ARENA,
   DEFAULT_WELCOME,
   merge,
   type GoodbyeConfig,
@@ -14,6 +15,7 @@ import {
   type LogConfig,
   type MusicConfig,
   type StreamConfig,
+  type ArenaConfig,
   type WelcomeConfig,
 } from "./config-types.js";
 
@@ -48,6 +50,9 @@ export async function getLogConfig(guildId: string): Promise<LogConfig> {
 export async function getStreamConfig(guildId: string): Promise<StreamConfig> {
   return merge(DEFAULT_STREAM, (await getGuild(guildId))?.streamConfig);
 }
+export async function getArenaConfig(guildId: string): Promise<ArenaConfig> {
+  return merge(DEFAULT_ARENA, (await getGuild(guildId))?.arenaConfig);
+}
 
 // Tek bir config alanını günceller (mevcutla birleştirip yazar), cache'i invalidate eder.
 type ConfigField =
@@ -56,7 +61,8 @@ type ConfigField =
   | "levelConfig"
   | "musicConfig"
   | "logConfig"
-  | "streamConfig";
+  | "streamConfig"
+  | "arenaConfig";
 
 export async function patchConfig<T extends object>(
   guildId: string,

@@ -10,6 +10,7 @@ const CARDS = [
   { slug: "levels", title: "Level", desc: "XP ayarları ve ödül rolleri", icon: "⭐" },
   { slug: "logging", title: "Loglama", desc: "Olay log kanalları", icon: "📋" },
   { slug: "streams", title: "Yayın Bildirimi", desc: "Kick canlı bildirimi", icon: "🔴" },
+  { slug: "arena", title: "Karnaval Arenası", desc: "Kasma süresi & drop ayarı", icon: "🎪" },
 ];
 
 export default async function GuildOverview({ params }: { params: { guildId: string } }) {
