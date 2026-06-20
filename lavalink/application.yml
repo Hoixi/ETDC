@@ -1,0 +1,61 @@
+# Lavalink yapılandırması — youtube-source + LavaSrc (Spotify metadata) plugin'leri.
+# Pluginler lavalink/plugins/ altına .jar olarak indirilir (README'ye bak).
+
+server:
+  port: 2333
+  address: 0.0.0.0
+
+lavalink:
+  plugins:
+    # YouTube kaynağı (Hetzner datacenter IP'sinde "bot değilsin" duvarını aşmak için şart).
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.13.5"
+      repository: "https://maven.lavalink.dev/releases"
+    # LavaSrc — Spotify/Apple/Deezer linklerini çözüp sesi YouTube'dan çeker.
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.7.3"
+      repository: "https://maven.lavalink.dev/releases"
+
+  server:
+    password: "${LAVALINK_SERVER_PASSWORD:youshallnotpass}"
+    sources:
+      # youtube-source plugin devralacağı için dahili youtube'u kapat.
+      youtube: false
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: true
+      local: false
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    trackStuckThresholdMs: 10000
+    youtubePlaylistLoadLimit: 6
+    playerUpdateInterval: 5
+
+plugins:
+  youtube:
+    enabled: true
+    # PO-token/oauth gerekirse buraya eklenir (README notuna bak).
+    clients:
+      - MUSIC
+      - WEB
+      - WEBEMBEDDED
+      - ANDROID_VR
+  lavasrc:
+    providers:
+      - "ytsearch:\"%ISRC%\""
+      - "ytsearch:%QUERY%"
+    sources:
+      spotify: true
+      applemusic: false
+      deezer: false
+      youtube: true
+    spotify:
+      # Spotify Developer Dashboard'dan al, .env üzerinden compose'a geçir.
+      clientId: "${SPOTIFY_CLIENT_ID:}"
+      clientSecret: "${SPOTIFY_CLIENT_SECRET:}"
+      countryCode: "TR"
+
+logging:
+  level:
+    root: INFO
+    lavalink: INFO

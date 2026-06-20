@@ -1,0 +1,28 @@
+{
+  "name": "@hoixi/bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "deploy": "tsx src/deploy-commands.ts",
+    "clear": "tsx src/clear-commands.ts",
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hoixi/db": "workspace:*",
+    "@napi-rs/canvas": "^0.1.65",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "fastify": "^4",
+    "lavalink-client": "^2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

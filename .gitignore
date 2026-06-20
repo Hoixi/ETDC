@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# env / secrets — ASLA commit'leme
+.env
+.env.*
+!.env.example
+
+# build çıktıları
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# prisma
+packages/db/prisma/migrations/dev.db*
+
+# lavalink
+lavalink/plugins/*.jar
+lavalink/logs/
+
+# loglar / geçici
+logs/
+*.log
+.DS_Store
+Thumbs.db

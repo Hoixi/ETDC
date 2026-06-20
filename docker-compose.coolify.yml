@@ -1,0 +1,90 @@
+# Hoixi — Coolify deployment compose'u.
+# Coolify'da: Yeni Resource → (Private/Public) Repository → Build Pack: Docker Compose
+#   → "Docker Compose Location" = /docker-compose.coolify.yml
+# Caddy YOK: Coolify'ın kendi reverse-proxy'si (Traefik) HTTPS'i otomatik halleder.
+# dashboard servisine Coolify UI'dan domain ata (port 3000).
+# Secret'lar Coolify → Environment Variables ekranına girilir (repoya GİRMEZ).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hoixi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: hoixi
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoixi -d hoixi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    restart: unless-stopped
+    environment:
+      _JAVA_OPTIONS: "-Xmx512m"
+      SERVER_PORT: 2333
+      LAVALINK_SERVER_PASSWORD: ${LAVALINK_PASSWORD}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+    volumes:
+      - ./lavalink/application.yml:/opt/Lavalink/application.yml:ro
+      - lavalink_plugins:/opt/Lavalink/plugins
+    expose:
+      - "2333"
+
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    restart: unless-stopped
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      GUILD_ID: ${GUILD_ID:-}
+      DATABASE_URL: postgresql://hoixi:${POSTGRES_PASSWORD}@postgres:5432/hoixi?schema=public
+      LAVALINK_HOST: lavalink
+      LAVALINK_PORT: 2333
+      LAVALINK_PASSWORD: ${LAVALINK_PASSWORD}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      BOT_API_HOST: 0.0.0.0
+      BOT_API_PORT: 3001
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "3001"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Coolify UI'dan bu servise domain ata (panel.enterthedarkcarnival.com, port 3000).
+      DATABASE_URL: postgresql://hoixi:${POSTGRES_PASSWORD}@postgres:5432/hoixi?schema=public
+      BOT_API_URL: http://bot:3001
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bot:
+        condition: service_started
+    expose:
+      - "3000"
+
+volumes:
+  postgres_data:
+  lavalink_plugins:

@@ -1,0 +1,92 @@
+# Hoixi — tam yığın (Hetzner / Docker Compose).
+#   Çekirdek + panel:   docker compose up -d
+#   Müzik dahil:        docker compose --profile music up -d
+# Lavalink portu DIŞARI açılmaz; bot/dashboard iç API'si de yayınlanmaz (sadece docker network).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hoixi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hoixi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hoixi}
+      POSTGRES_DB: hoixi
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoixi -d hoixi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: hoixi-lavalink
+    profiles: ["music"]
+    restart: unless-stopped
+    environment:
+      _JAVA_OPTIONS: "-Xmx512m"
+      SERVER_PORT: 2333
+      LAVALINK_SERVER_PASSWORD: "${LAVALINK_PASSWORD}"
+      SPOTIFY_CLIENT_ID: "${SPOTIFY_CLIENT_ID:-}"
+      SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET:-}"
+    volumes:
+      - ./lavalink/application.yml:/opt/Lavalink/application.yml:ro
+      - ./lavalink/plugins:/opt/Lavalink/plugins
+    expose:
+      - "2333"
+
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    container_name: hoixi-bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://hoixi:${POSTGRES_PASSWORD:-hoixi}@postgres:5432/hoixi?schema=public
+      LAVALINK_HOST: lavalink
+      BOT_API_HOST: 0.0.0.0   # docker network'ten erişilsin (port DIŞARI açılmaz)
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "3001"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    container_name: hoixi-dashboard
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://hoixi:${POSTGRES_PASSWORD:-hoixi}@postgres:5432/hoixi?schema=public
+      BOT_API_URL: http://bot:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bot:
+        condition: service_started
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: hoixi-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - dashboard
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

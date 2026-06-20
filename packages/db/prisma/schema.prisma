@@ -1,0 +1,106 @@
+// Hoixi — Prisma şeması.
+// Spec bölüm 4'teki taslağı temel alır. Bot ve panel aynı DB'ye bağlanır.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id            String   @id // discord guild id
+  welcomeConfig Json? // {channelId, bg, title, subtitle, enabled}
+  goodbyeConfig Json? // {channelId, title, subtitle, enabled}
+  levelConfig   Json? // {xpPerMsg, cooldownSec, levelUpChannelId, cardStyle, voiceXpEnabled, voiceXpPerMin}
+  musicConfig   Json? // {djRoleId, defaultVolume, maxQueue}
+  logConfig     Json? // {joinLeave, modLog, messageLog} -> channelId'ler
+  streamConfig  Json? // {enabled, kickChannel, discordChannelId, pingRoleId, pollSec}
+  createdAt     DateTime @default(now())
+
+  rolePanels  RolePanel[]
+  members     MemberXP[]
+  levelRewards LevelReward[]
+  warnings    Warning[]
+}
+
+model RolePanel {
+  id        String        @id @default(cuid())
+  guildId   String
+  guild     Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channelId String
+  messageId String? // yayınlanınca dolar
+  embed     Json // {title, description, color, image, thumbnail, footer}
+  mode      RolePanelMode @default(TOGGLE) // TOGGLE | UNIQUE | VERIFY | ADD_ONLY
+  buttons   RoleButton[]
+  createdBy String
+  updatedAt DateTime      @updatedAt
+  createdAt DateTime      @default(now())
+
+  @@index([guildId])
+}
+
+model RoleButton {
+  id      String      @id @default(cuid())
+  panelId String
+  panel   RolePanel   @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  roleId  String
+  label   String
+  emoji   String?
+  style   ButtonStyle @default(SECONDARY) // PRIMARY | SECONDARY | SUCCESS | DANGER
+  order   Int
+
+  @@index([panelId])
+}
+
+model MemberXP {
+  guildId   String
+  userId    String
+  xp        Int       @default(0)
+  level     Int       @default(0)
+  lastMsgAt DateTime?
+  guild     Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@id([guildId, userId])
+}
+
+// Level -> ödül rolü eşleşmesi (panelden tanımlanır, bot otomatik verir)
+model LevelReward {
+  id      String @id @default(cuid())
+  guildId String
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  level   Int
+  roleId  String
+
+  @@unique([guildId, level])
+  @@index([guildId])
+}
+
+// Moderasyon uyarıları
+model Warning {
+  id        String   @id @default(cuid())
+  guildId   String
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  userId    String
+  moderator String
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([guildId, userId])
+}
+
+enum RolePanelMode {
+  TOGGLE
+  UNIQUE
+  VERIFY
+  ADD_ONLY
+}
+
+enum ButtonStyle {
+  PRIMARY
+  SECONDARY
+  SUCCESS
+  DANGER
+}

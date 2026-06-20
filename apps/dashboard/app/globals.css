@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-bg text-gray-200;
+}
+
+/* Form elemanları için ortak stiller */
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-border bg-bg-soft px-3 py-2 text-sm text-gray-100
+           outline-none transition focus:border-accent;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm
+           font-medium text-white transition hover:bg-accent-hover disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-bg-soft
+           px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-bg-hover;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm
+           font-medium text-white transition hover:bg-red-500;
+  }
+  .card {
+    @apply rounded-xl border border-border bg-bg-card p-5;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-300;
+  }
+}

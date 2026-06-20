@@ -1,0 +1,7 @@
+# Caddy — otomatik HTTPS + reverse proxy (Discord OAuth https ister).
+# DNS: panel.enterthedarkcarnival.com -> sunucu IP'si A kaydı olmalı.
+
+panel.enterthedarkcarnival.com {
+	reverse_proxy dashboard:3000
+	encode gzip
+}

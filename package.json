@@ -1,0 +1,20 @@
+{
+  "name": "hoixi-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hoixi Discord Bot + Yönetim Paneli (monorepo)",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "db:generate": "pnpm --filter @hoixi/db generate",
+    "db:migrate": "pnpm --filter @hoixi/db migrate",
+    "db:studio": "pnpm --filter @hoixi/db studio",
+    "bot:dev": "pnpm --filter @hoixi/bot dev",
+    "bot:deploy": "pnpm --filter @hoixi/bot deploy",
+    "bot:clear": "pnpm --filter @hoixi/bot clear",
+    "bot:build": "pnpm --filter @hoixi/bot build",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
