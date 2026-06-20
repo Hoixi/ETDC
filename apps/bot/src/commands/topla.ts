@@ -1,0 +1,71 @@
+// /topla — biten kasma oturumunun ganimetini topla.
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from "discord.js";
+import { prisma } from "@hoixi/db";
+import type { Command } from "../types.js";
+import {
+  getPlayer,
+  generateItem,
+  addXp,
+  itemLine,
+  RARITY,
+  RARITY_ORDER,
+  DROPS_PER_SESSION,
+  type GeneratedItem,
+} from "../features/arena/index.js";
+
+const ts = (d: Date) => `<t:${Math.floor(d.getTime() / 1000)}:R>`;
+
+const topla: Command = {
+  data: new SlashCommandBuilder()
+    .setName("topla")
+    .setDescription("Biten kasma oturumunun ganimetini toplar")
+    .setDMPermission(false),
+
+  async execute(interaction) {
+    if (!interaction.inCachedGuild()) return;
+    const { guild, user } = interaction;
+    const player = await getPlayer(guild.id, user.id);
+    const now = Date.now();
+
+    if (!player.grindEndsAt || player.grindCollected) {
+      await interaction.reply({ content: "Aktif kasman yok. `/kas` ile başla.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    if (player.grindEndsAt.getTime() > now) {
+      await interaction.reply({ content: `⏳ Kasman henüz bitmedi — ${ts(player.grindEndsAt)} hazır olur.`, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    await interaction.deferReply();
+
+    // Ganimet üret (iLvl player level'a göre ölçeklenir).
+    const drops: GeneratedItem[] = Array.from({ length: DROPS_PER_SESSION }, () =>
+      generateItem(player.level),
+    );
+
+    await prisma.arenaItem.createMany({
+      data: drops.map((d) => ({ guildId: guild.id, userId: user.id, ...d })),
+    });
+
+    // XP: taban + nadirlik bonusu
+    const xpGain = 60 + drops.reduce((s, d) => s + RARITY_ORDER.indexOf(d.rarity) * 15, 0);
+    const { leveledUp, newLevel } = await addXp(guild.id, user.id, xpGain);
+
+    await prisma.arenaPlayer.update({
+      where: { guildId_userId: { guildId: guild.id, userId: user.id } },
+      data: { grindCollected: true, grindEndsAt: null },
+    });
+
+    // En yüksek nadirliğe göre embed rengi
+    const best = drops.reduce((a, b) => (RARITY_ORDER.indexOf(b.rarity) > RARITY_ORDER.indexOf(a.rarity) ? b : a));
+    const embed = new EmbedBuilder()
+      .setColor(RARITY[best.rarity].color)
+      .setAuthor({ name: `${user.username} ganimetini topladı 🎁` })
+      .setDescription(drops.map((d) => itemLine(d)).join("\n"))
+      .setFooter({ text: `+${xpGain} XP${leveledUp ? ` · 🎉 Level ${newLevel}!` : ""} · panelden giy: /arena` });
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+};
+
+export default topla;

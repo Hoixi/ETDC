@@ -24,6 +24,7 @@ model Guild {
   members     MemberXP[]
   levelRewards LevelReward[]
   warnings    Warning[]
+  arenaPlayers ArenaPlayer[]
 }
 
 model RolePanel {
@@ -103,4 +104,71 @@ enum ButtonStyle {
   SECONDARY
   SUCCESS
   DANGER
+}
+
+// ============================================================
+// Karnaval Arenası (features/arena) — idle loot grinder + PvP/PvE
+// ============================================================
+
+model ArenaPlayer {
+  guildId        String
+  userId         String
+  level          Int       @default(1)
+  xp             Int       @default(0)
+  tokens         Int       @default(0) // Jeton
+  elo            Int       @default(1000)
+  wins           Int       @default(0)
+  losses         Int       @default(0)
+  // Idle kasma oturumu (tek aktif oturum)
+  grindEndsAt    DateTime? // null = oturum yok
+  grindCollected Boolean   @default(true)
+  lastDuelAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  guild Guild       @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  items ArenaItem[]
+
+  @@id([guildId, userId])
+}
+
+model ArenaItem {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  baseType  String // şablon ("Paslı Bıçak" vb.)
+  name      String
+  rarity    Rarity
+  slot      ItemSlot
+  iLvl      Int
+  // Birincil statlar
+  atk       Int      @default(0)
+  def       Int      @default(0)
+  hp        Int      @default(0)
+  spd       Int      @default(0)
+  luck      Int      @default(0)
+  // İkincil/özel statlar (affix): [{type, value}] + Legendary pasifi
+  affixes   Json     @default("[]")
+  passive   String? // Legendary benzersiz pasif adı
+  upgrade   Int      @default(0) // +0..+10 yükseltme
+  equipped  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  player ArenaPlayer @relation(fields: [guildId, userId], references: [guildId, userId], onDelete: Cascade)
+
+  @@index([guildId, userId])
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum ItemSlot {
+  WEAPON
+  HEAD
+  BODY
+  ACCESSORY
 }
