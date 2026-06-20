@@ -16,11 +16,6 @@ const schema = z.object({
   GUILD_ID: z.string().optional(),
   DATABASE_URL: z.string().min(1, "DATABASE_URL gerekli"),
 
-  // Lavalink (müzik) — yoksa müzik özelliği bağlanmaz ama bot çalışır.
-  LAVALINK_HOST: z.string().default("localhost"),
-  LAVALINK_PORT: z.coerce.number().default(2333),
-  LAVALINK_PASSWORD: z.string().default("youshallnotpass"),
-
   // Bot iç API (panel buradan canlı aksiyon çağırır)
   INTERNAL_API_KEY: z.string().optional(),
   BOT_API_PORT: z.coerce.number().default(3001),

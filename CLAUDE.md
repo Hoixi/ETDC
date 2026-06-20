@@ -34,8 +34,12 @@ Bu, `hoixi-bot-spec.md` brief'ine göre kurulan monorepo. Spec'in tamamı
   sadece typecheck/emit doğrulaması için.
 - Panel ↔ bot: dashboard `lib/botApi.ts` → bot Fastify `src/api/server.ts` (x-internal-key).
   Config DB'ye yazılır, sonra `/config/invalidate` ile bot cache tazelenir.
-- **Tüm milestone'lar (1-10) tamamlandı.** 25 slash komut, panel uçtan uca çalışır.
-  Gerçek Discord/Lavalink testi token + çalışan Docker gerektirir (kullanıcı tarafında).
+- **Müzik (Lavalink) KALDIRILDI.** YouTube datacenter-IP bloğu (oauth+TV client dahil
+  tutarsız "requires login") yüzünden güvenilir değildi; müzik harici bir bota devredildi.
+  Lavalink container'ı, `features/music/`, müzik komutları ve panel müzik ekranı silindi.
+  Yeniden eklenecekse: SoundCloud kaynağı veya paralı yt-to-mp3 API + Lavalink http kaynağı.
+- **14 slash komut**, panel uçtan uca Coolify'da canlı (panel.enterthedarkcarnival.com).
+  Deploy: GitHub repo (Hoixi/ETDC) → Coolify Docker Compose (`docker-compose.coolify.yml`).
 
 ## Güvenlik (spec bölüm 8 — ihmal etme)
 

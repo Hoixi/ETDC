@@ -9,7 +9,6 @@ const CARDS = [
   { slug: "welcome", title: "Karşılama", desc: "Resimli karşılama/uğurlama kartı", icon: "👋" },
   { slug: "levels", title: "Level", desc: "XP ayarları ve ödül rolleri", icon: "⭐" },
   { slug: "logging", title: "Loglama", desc: "Olay log kanalları", icon: "📋" },
-  { slug: "music", title: "Müzik", desc: "DJ rolü ve müzik ayarları", icon: "🎵" },
   { slug: "streams", title: "Yayın Bildirimi", desc: "Kick canlı bildirimi", icon: "🔴" },
 ];
 

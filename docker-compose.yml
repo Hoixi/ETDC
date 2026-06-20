@@ -1,7 +1,6 @@
 # Hoixi — tam yığın (Hetzner / Docker Compose).
-#   Çekirdek + panel:   docker compose up -d
-#   Müzik dahil:        docker compose --profile music up -d
-# Lavalink portu DIŞARI açılmaz; bot/dashboard iç API'si de yayınlanmaz (sadece docker network).
+#   docker compose up -d
+# Bot/dashboard iç API'si dışarı yayınlanmaz (sadece docker network). Müzik dış botta.
 
 services:
   postgres:
@@ -20,22 +19,6 @@ services:
       timeout: 5s
       retries: 10
 
-  lavalink:
-    build:
-      context: ./lavalink
-    container_name: hoixi-lavalink
-    profiles: ["music"]
-    restart: unless-stopped
-    environment:
-      _JAVA_OPTIONS: "-Xmx512m"
-      SERVER_PORT: 2333
-      LAVALINK_SERVER_PASSWORD: "${LAVALINK_PASSWORD}"
-      SPOTIFY_CLIENT_ID: "${SPOTIFY_CLIENT_ID:-}"
-      SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET:-}"
-    # Plugin'ler açılışta imajın yazılabilir ./plugins klasörüne iner (volume yok → izin sorunu yok).
-    expose:
-      - "2333"
-
   bot:
     build:
       context: .
@@ -45,7 +28,6 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://hoixi:${POSTGRES_PASSWORD:-hoixi}@postgres:5432/hoixi?schema=public
-      LAVALINK_HOST: lavalink
       BOT_API_HOST: 0.0.0.0   # docker network'ten erişilsin (port DIŞARI açılmaz)
     depends_on:
       postgres:

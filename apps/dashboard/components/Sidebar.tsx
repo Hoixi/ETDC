@@ -9,7 +9,6 @@ const ITEMS = [
   { slug: "welcome", label: "Karşılama", icon: "👋" },
   { slug: "levels", label: "Level", icon: "⭐" },
   { slug: "logging", label: "Loglama", icon: "📋" },
-  { slug: "music", label: "Müzik", icon: "🎵" },
   { slug: "streams", label: "Yayın Bildirimi", icon: "🔴" },
   { slug: "settings", label: "Ayarlar", icon: "⚙️" },
 ];

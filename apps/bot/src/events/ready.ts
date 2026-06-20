@@ -2,7 +2,6 @@
 import { Events, ActivityType } from "discord.js";
 import type { BotEvent } from "../types.js";
 import { startVoiceXpLoop } from "../features/levels/index.js";
-import { initLavalink } from "../features/music/index.js";
 import { startStreamLoop } from "../features/streams/index.js";
 import { startApi } from "../api/server.js";
 
@@ -21,9 +20,6 @@ const ready: BotEvent<Events.ClientReady> = {
 
     // Kick yayın bildirimi döngüsü.
     startStreamLoop(client);
-
-    // Lavalink'i başlat (ayakta değilse müzik sessizce devre dışı kalır).
-    await initLavalink(client);
 
     // Panel iç API'sini başlat.
     await startApi(client);

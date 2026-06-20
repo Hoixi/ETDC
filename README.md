@@ -11,7 +11,6 @@ Domain: **enterthedarkcarnival.com** · Panel: `panel.enterthedarkcarnival.com`
 apps/bot         discord.js v14 botu (TypeScript, ESM)
 apps/dashboard   Next.js yönetim paneli           (Milestone 5+)
 packages/db      Prisma şeması + paylaşılan client (bot ve panel ortak kullanır)
-lavalink/        Lavalink config + youtube-source/LavaSrc pluginleri (Milestone 9)
 ```
 
 ## Teknoloji kararları
@@ -20,7 +19,7 @@ lavalink/        Lavalink config + youtube-source/LavaSrc pluginleri (Milestone 
 | ------------- | --------------------------------------------------------- |
 | Veritabanı    | **PostgreSQL** (Prisma)                                    |
 | XP kaynağı    | **Mesaj + sesli kanal süresi**                            |
-| Müzik         | **YouTube + Spotify metadata** (Lavalink: youtube-source + LavaSrc) |
+| Müzik         | **Harici müzik botu** (YouTube datacenter-IP bloğu nedeniyle Lavalink kaldırıldı) |
 | Kick bildirimi| Sonraki sürüm (modül izole)                               |
 
 ## İlk kurulum (geliştirme)
@@ -79,7 +78,7 @@ atadığı rollerin **üstüne** taşımalı — yoksa "atanamıyor" uyarısı g
 
 Next.js paneli `apps/dashboard`. Discord OAuth ile giriş, sadece **Sunucuyu Yönet**
 yetkin olan sunucular görünür. Ekranlar: Rol Mesajı Builder (uçtan uca, canlı önizleme),
-Karşılama, Level (+ödül rolleri), Loglama, Müzik, Kick Yayın Bildirimi, Ayarlar.
+Karşılama, Level (+ödül rolleri), Loglama, Kick Yayın Bildirimi, Ayarlar.
 
 ```bash
 # Local panel geliştirme (bot ayrı terminalde çalışırken):
@@ -100,17 +99,13 @@ network, `INTERNAL_API_KEY` ile korumalı). Saf config DB'ye yazılır, bot cach
 # DNS: panel.enterthedarkcarnival.com A kaydı -> sunucu IP'si
 cp .env.example .env          # tüm secret'ları doldur (INTERNAL_API_KEY uzun random)
 
-# Müzik için Lavalink pluginlerini indir (lavalink/plugins/ altına .jar):
-#   youtube-plugin + lavasrc-plugin (application.yml'de sürümler yazılı)
-
-docker compose up -d                  # postgres + bot + dashboard + caddy
-docker compose --profile music up -d  # + lavalink (müzik)
+docker compose up -d          # postgres + bot + dashboard + caddy
 ```
 
-`bot` container'ı açılışta `prisma migrate deploy` çalıştırır. Caddy otomatik HTTPS alır.
-Lavalink ve iç API portları **dışarı açılmaz** (sadece docker network).
+`bot` container'ı açılışta şemayı uygular (`prisma db push`). Caddy otomatik HTTPS alır.
+İç API portları **dışarı açılmaz** (sadece docker network).
 
-## Build sırası (milestone'lar) — hepsi tamam ✅
+## Build sırası (milestone'lar)
 
 1. ✅ İskelet: monorepo, Prisma, bot login + `/ping`, slash register
 2. ✅ Buton rol sistemi (TOGGLE / UNIQUE / ADD_ONLY / VERIFY) + `/rolepanel`
@@ -120,7 +115,7 @@ Lavalink ve iç API portları **dışarı açılmaz** (sadece docker network).
 6. ✅ Rol Mesajı Builder (panelden uçtan uca, canlı önizleme) — projenin kalbi
 7. ✅ Welcome/Levels/Logging/Music/Streams ekranları
 8. ✅ Moderasyon (`/kick /ban /timeout /clear /warn /warnings`) + log
-9. ✅ Müzik (Lavalink + LavaSrc): `/play /skip /queue /pause /resume /volume /nowplaying /loop /shuffle /stop`
+9. ⬜ Müzik — Lavalink kuruldu ama YouTube'un datacenter-IP bloğu (oauth dahil tutarsız) nedeniyle **kaldırıldı**; müzik harici bir bota devredildi.
 10. ✅ Kick yayın bildirimi (izole `streams/` modülü) + `/yayin`
 
 > Secret'lar repoya girmez. `.env` `.gitignore`'da; sadece `.env.example` commit'lenir.
