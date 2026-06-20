@@ -4,6 +4,7 @@ import { Events, MessageFlags } from "discord.js";
 import type { HoixiClient } from "../client.js";
 import type { BotEvent } from "../types.js";
 import { ROLE_BUTTON_PREFIX, handleRoleButton } from "../features/roles/index.js";
+import { DUEL_PREFIX, handleDuelButton } from "../features/arena/index.js";
 
 const interactionCreate: BotEvent<Events.InteractionCreate> = {
   name: Events.InteractionCreate,
@@ -46,6 +47,14 @@ const interactionCreate: BotEvent<Events.InteractionCreate> = {
 
     // --- Buton router (customId prefix'ine göre yönlendir) ---
     if (interaction.isButton()) {
+      if (interaction.customId.startsWith(`${DUEL_PREFIX}:`)) {
+        try {
+          await handleDuelButton(interaction);
+        } catch (err) {
+          console.error("Düello buton hatası:", err);
+        }
+        return;
+      }
       if (interaction.customId.startsWith(`${ROLE_BUTTON_PREFIX}:`)) {
         try {
           await handleRoleButton(interaction);

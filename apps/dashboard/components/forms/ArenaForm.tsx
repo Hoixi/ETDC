@@ -28,6 +28,11 @@ export function ArenaForm({ guildId, config }: { guildId: string; config: ArenaC
           <input type="number" min={1} max={20} className="input" value={c.dropsPerSession}
             onChange={(e) => set("dropsPerSession", Number(e.target.value))} />
         </div>
+        <div>
+          <label className="label">Avlanma bekleme (dakika)</label>
+          <input type="number" min={0} max={1440} className="input" value={c.huntCooldownMin}
+            onChange={(e) => set("huntCooldownMin", Number(e.target.value))} />
+        </div>
       </div>
       <div className="mt-5 flex items-center gap-3">
         <button className="btn" disabled={saving}

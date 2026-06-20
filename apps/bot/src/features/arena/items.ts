@@ -68,7 +68,8 @@ export function generateItem(playerLevel: number, luck = 0, forceRarity?: Rarity
   const rarity = forceRarity ?? rollRarity(luck);
   const slot = rollSlot();
   const slotDef = SLOT[slot];
-  const iLvl = Math.max(1, playerLevel + randInt(-1, 2));
+  // iLvl level'la birlikte yukarı ölçeklenir → yüksek levelda yüksek iLvl şansı artar.
+  const iLvl = Math.max(1, playerLevel + randInt(0, Math.ceil(playerLevel / 4) + 2));
 
   // Birincil stat bütçesi → slot ağırlıklarına göre dağıt.
   const budget = Math.round(iLvl * 6 * RARITY[rarity].budgetMult);

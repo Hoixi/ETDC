@@ -40,6 +40,7 @@ export interface ArenaConfig {
   enabled: boolean;
   grindMinutes: number;
   dropsPerSession: number;
+  huntCooldownMin: number;
 }
 
 export const DEFAULTS = {
@@ -87,6 +88,7 @@ export const DEFAULTS = {
     enabled: true,
     grindMinutes: 60,
     dropsPerSession: 6,
+    huntCooldownMin: 10,
   } as ArenaConfig,
 };
 

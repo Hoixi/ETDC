@@ -6,6 +6,7 @@ import { buildFighter, type Fighter } from "./combat.js";
 export { generateItem, type GeneratedItem } from "./items.js";
 export { makeLoginUrl, panelButtonRow } from "./magicLink.js";
 export { buildFighter, buildMonster, battle, winChance, type Fighter, type BattleResult } from "./combat.js";
+export { challengeMessage, handleDuelButton, DUEL_CD_MS, DUEL_PREFIX } from "./duel.js";
 export {
   salvageItem, upgradeItem, rerollItem, spinWheel,
   salvageValue, upgradeCost, rerollCost, WHEEL_COST, type WheelReward,

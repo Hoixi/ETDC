@@ -55,6 +55,7 @@ export interface ArenaConfig {
   enabled: boolean;
   grindMinutes: number; // kasma oturum süresi (dakika)
   dropsPerSession: number; // oturum başına drop sayısı
+  huntCooldownMin: number; // /avlan bekleme süresi (dakika)
 }
 
 export const DEFAULT_WELCOME: WelcomeConfig = {
@@ -111,6 +112,7 @@ export const DEFAULT_ARENA: ArenaConfig = {
   enabled: true,
   grindMinutes: 60,
   dropsPerSession: 6,
+  huntCooldownMin: 10,
 };
 
 // Saklanan (kısmi/eski) JSON'ı default'la birleştir — eksik alanlar default'tan gelir.

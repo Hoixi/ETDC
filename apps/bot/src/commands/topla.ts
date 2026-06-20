@@ -5,6 +5,7 @@ import type { Command } from "../types.js";
 import {
   getPlayer,
   generateItem,
+  aggregateStats,
   addXp,
   itemLine,
   RARITY,
@@ -38,10 +39,14 @@ const topla: Command = {
 
     await interaction.deferReply();
 
-    // Ganimet üret (iLvl player level'a göre ölçeklenir, adet panelden ayarlı).
+    // Giyili Şans drop kalitesini artırır.
+    const equipped = await prisma.arenaItem.findMany({ where: { guildId: guild.id, userId: user.id, equipped: true } });
+    const luck = aggregateStats(equipped).luck;
+
+    // Ganimet üret (iLvl level'a göre ölçeklenir, adet panelden ayarlı).
     const cfg = await getArenaConfig(guild.id);
     const drops: GeneratedItem[] = Array.from({ length: cfg.dropsPerSession }, () =>
-      generateItem(player.level),
+      generateItem(player.level, luck),
     );
 
     await prisma.arenaItem.createMany({

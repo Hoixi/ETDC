@@ -3,8 +3,9 @@ import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { prisma } from "@hoixi/db";
 import type { Command } from "../types.js";
 import { loadFighter, buildMonster, battle, addXp, generateItem, itemLine } from "../features/arena/index.js";
+import { getArenaConfig } from "../lib/guildConfig.js";
 
-const HUNT_CD_MS = 20_000;
+const fmtCd = (ms: number) => (ms >= 60_000 ? `${Math.ceil(ms / 60_000)} dk` : `${Math.ceil(ms / 1000)} sn`);
 
 const avlan: Command = {
   data: new SlashCommandBuilder()
@@ -18,9 +19,10 @@ const avlan: Command = {
     const { guild, user } = interaction;
     const { player, fighter } = await loadFighter(guild.id, user.id, user.username);
 
-    if (player.lastDuelAt && Date.now() - player.lastDuelAt.getTime() < HUNT_CD_MS) {
-      const ready = Math.ceil((HUNT_CD_MS - (Date.now() - player.lastDuelAt.getTime())) / 1000);
-      await interaction.editReply(`⏳ ${ready} sn sonra tekrar avlanabilirsin.`);
+    const cd = (await getArenaConfig(guild.id)).huntCooldownMin * 60_000;
+    if (player.lastDuelAt && Date.now() - player.lastDuelAt.getTime() < cd) {
+      const left = cd - (Date.now() - player.lastDuelAt.getTime());
+      await interaction.editReply(`⏳ ${fmtCd(left)} sonra tekrar avlanabilirsin.`);
       return;
     }
 
