@@ -8,10 +8,10 @@ server:
 lavalink:
   plugins:
     # YouTube kaynağı (Hetzner datacenter IP'sinde "bot değilsin" duvarını aşmak için şart).
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.13.5"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       repository: "https://maven.lavalink.dev/releases"
     # LavaSrc — Spotify/Apple/Deezer linklerini çözüp sesi YouTube'dan çeker.
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.7.3"
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
       repository: "https://maven.lavalink.dev/releases"
 
   server:
@@ -34,11 +34,14 @@ lavalink:
 plugins:
   youtube:
     enabled: true
-    # PO-token/oauth gerekirse buraya eklenir (README notuna bak).
+    # Datacenter IP'lerinde bot-kontrolünü en aza indiren client seti.
+    # Hâlâ "sign in to confirm" alırsan oauth aç (README notuna bak).
     clients:
       - MUSIC
       - WEB
       - WEBEMBEDDED
+      - MWEB
+      - TVHTML5EMBEDDED
       - ANDROID_VR
   lavasrc:
     providers:
