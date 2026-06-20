@@ -37,7 +37,7 @@ const envanter: Command = {
       .setAuthor({ name: `${interaction.user.username} — Çanta (${items.length})`, iconURL: interaction.user.displayAvatarURL() })
       .setDescription(shown.map(itemLine).join("\n"))
       .setFooter({
-        text: items.length > MAX_SHOWN ? `…ve ${items.length - MAX_SHOWN} eşya daha · tümü panelde: /arena` : "Eşyalarını panelden giy: /arena",
+        text: items.length > MAX_SHOWN ? `…ve ${items.length - MAX_SHOWN} eşya daha · tümü panelde: panel.enterthedarkcarnival.com/arena` : "Eşyalarını panelden giy: panel.enterthedarkcarnival.com/arena",
       });
 
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });

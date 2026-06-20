@@ -62,7 +62,7 @@ const topla: Command = {
       .setColor(RARITY[best.rarity].color)
       .setAuthor({ name: `${user.username} ganimetini topladı 🎁` })
       .setDescription(drops.map((d) => itemLine(d)).join("\n"))
-      .setFooter({ text: `+${xpGain} XP${leveledUp ? ` · 🎉 Level ${newLevel}!` : ""} · panelden giy: /arena` });
+      .setFooter({ text: `+${xpGain} XP${leveledUp ? ` · 🎉 Level ${newLevel}!` : ""} · panelden giy: panel.enterthedarkcarnival.com/arena` });
 
     await interaction.editReply({ embeds: [embed] });
   },

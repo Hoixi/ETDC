@@ -33,7 +33,7 @@ const karakter: Command = {
     const gearText =
       equipped.length > 0
         ? equipped.map(itemLine).join("\n")
-        : "_Hiç eşya giymiyorsun. Panelden giy: /arena_";
+        : "_Hiç eşya giymiyorsun. Panelden giy: panel.enterthedarkcarnival.com/arena_";
 
     const secondary = (Object.entries(stats.affixes) as [AffixType, number][])
       .map(([k, v]) => `${AFFIX[k].label} ${v}${AFFIX[k].suffix}`)
@@ -49,7 +49,7 @@ const karakter: Command = {
           `ATK ${stats.atk} · DEF ${stats.def} · HP ${stats.hp} · SPD ${stats.spd} · LUCK ${stats.luck}` +
           (secondary ? `\n${secondary}` : ""),
       })
-      .setFooter({ text: "Ekipmanı panelden değiştir: /arena" });
+      .setFooter({ text: "Ekipmanı panelden değiştir: panel.enterthedarkcarnival.com/arena" });
 
     await interaction.reply({ embeds: [embed], flags: user.id === interaction.user.id ? undefined : MessageFlags.Ephemeral });
   },

@@ -42,7 +42,7 @@ const profil: Command = {
         { name: "Envanter", value: `🎒 ${itemCount} eşya`, inline: true },
         { name: "Kasma", value: grind, inline: true },
       )
-      .setFooter({ text: "Eşyalarını panelden giy: /arena" });
+      .setFooter({ text: "Eşyalarını panelden giy: panel.enterthedarkcarnival.com/arena" });
 
     await interaction.reply({ embeds: [embed], flags: user.id === interaction.user.id ? undefined : MessageFlags.Ephemeral });
   },
