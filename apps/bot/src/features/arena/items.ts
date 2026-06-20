@@ -35,7 +35,7 @@ function rollSlot(): ItemSlot {
   return pick([ItemSlot.WEAPON, ItemSlot.HEAD, ItemSlot.BODY, ItemSlot.ACCESSORY]);
 }
 
-function rollAffixes(count: number, iLvl: number): Affix[] {
+export function rollAffixes(count: number, iLvl: number): Affix[] {
   if (count <= 0) return [];
   const pool = [...AFFIX_POOL];
   const out: Affix[] = [];
@@ -63,9 +63,9 @@ export interface GeneratedItem {
   passive: string | null;
 }
 
-// Bir drop üret. playerLevel iLvl'i ölçekler.
-export function generateItem(playerLevel: number, luck = 0): GeneratedItem {
-  const rarity = rollRarity(luck);
+// Bir drop üret. playerLevel iLvl'i ölçekler. forceRarity verilirse nadirlik sabitlenir (çark jackpot).
+export function generateItem(playerLevel: number, luck = 0, forceRarity?: Rarity): GeneratedItem {
+  const rarity = forceRarity ?? rollRarity(luck);
   const slot = rollSlot();
   const slotDef = SLOT[slot];
   const iLvl = Math.max(1, playerLevel + randInt(-1, 2));

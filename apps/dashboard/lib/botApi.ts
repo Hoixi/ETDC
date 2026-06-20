@@ -69,6 +69,16 @@ export const botApi = {
     request<{ ok: boolean }>(`/panels/${panelId}/delete`, { method: "POST", body: JSON.stringify({}) }),
   invalidateConfig: (guildId: string) =>
     request<{ ok: boolean }>(`/config/invalidate`, { method: "POST", body: JSON.stringify({ guildId }) }),
+
+  // Arena ekonomi
+  arenaSalvage: (g: string, u: string, itemId: string) =>
+    request<{ gained: number; tokens: number }>(`/arena/${g}/${u}/salvage`, { method: "POST", body: JSON.stringify({ itemId }) }),
+  arenaUpgrade: (g: string, u: string, itemId: string) =>
+    request<{ success: boolean; upgrade: number; cost: number; tokens: number }>(`/arena/${g}/${u}/upgrade`, { method: "POST", body: JSON.stringify({ itemId }) }),
+  arenaReroll: (g: string, u: string, itemId: string) =>
+    request<{ cost: number; tokens: number }>(`/arena/${g}/${u}/reroll`, { method: "POST", body: JSON.stringify({ itemId }) }),
+  arenaWheel: (g: string, u: string) =>
+    request<{ reward: { type: string; amount?: number; item?: { name: string; rarity: string; iLvl: number } }; tokens: number }>(`/arena/${g}/${u}/wheel`, { method: "POST", body: JSON.stringify({}) }),
   // Bot ayakta değilse bile panel açılabilsin diye "yumuşak" versiyon.
   safe: {
     async channels(guildId: string): Promise<ApiChannel[]> {

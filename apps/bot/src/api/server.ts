@@ -8,6 +8,7 @@ import { publishPanel, deletePanel, PanelPublishError } from "../features/roles/
 import { drawWelcomeCard } from "../features/welcome/index.js";
 import { applyPlaceholders } from "../lib/placeholders.js";
 import { invalidateGuild } from "../lib/guildConfig.js";
+import { salvageItem, upgradeItem, rerollItem, spinWheel } from "../features/arena/index.js";
 
 export async function startApi(client: Client): Promise<void> {
   if (!env.INTERNAL_API_KEY) {
@@ -156,6 +157,28 @@ export async function startApi(client: Client): Promise<void> {
     invalidateGuild(req.body.guildId);
     return { ok: true };
   });
+
+  // --- Arena ekonomi (panel oyuncu paneli üzerinden çağırır) ---
+  type ArenaParams = { guildId: string; userId: string };
+  const send = (reply: import("fastify").FastifyReply, r: { ok: boolean; error?: string }) =>
+    r.ok ? r : reply.code(400).send(r);
+
+  app.post<{ Params: ArenaParams; Body: { itemId: string } }>(
+    "/arena/:guildId/:userId/salvage",
+    async (req, reply) => send(reply, await salvageItem(req.params.guildId, req.params.userId, req.body.itemId)),
+  );
+  app.post<{ Params: ArenaParams; Body: { itemId: string } }>(
+    "/arena/:guildId/:userId/upgrade",
+    async (req, reply) => send(reply, await upgradeItem(req.params.guildId, req.params.userId, req.body.itemId)),
+  );
+  app.post<{ Params: ArenaParams; Body: { itemId: string } }>(
+    "/arena/:guildId/:userId/reroll",
+    async (req, reply) => send(reply, await rerollItem(req.params.guildId, req.params.userId, req.body.itemId)),
+  );
+  app.post<{ Params: ArenaParams }>(
+    "/arena/:guildId/:userId/wheel",
+    async (req, reply) => send(reply, await spinWheel(req.params.guildId, req.params.userId)),
+  );
 
   // Hata yakalayıcı
   app.setErrorHandler((err, _req, reply) => {

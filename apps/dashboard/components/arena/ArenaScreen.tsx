@@ -32,6 +32,38 @@ export function ArenaScreen({
   const [items, setItems] = useState<PlainItem[]>(initial);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState<Slot | null>(null);
+  const [tok, setTok] = useState(tokens);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function econ(action: "salvage" | "upgrade" | "reroll" | "wheel", itemId?: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/arena/${guildId}/economy`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, itemId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Hata");
+      if (typeof data.tokens === "number") setTok(data.tokens);
+      let m = "Tamam";
+      if (action === "salvage") m = `🔥 Eritildi → +${data.gained} jeton`;
+      else if (action === "upgrade") m = data.success ? `⬆️ Başarılı! Eşya +${data.upgrade} oldu (-${data.cost} jeton)` : `💢 Yükseltme başarısız! (-${data.cost} jeton)`;
+      else if (action === "reroll") m = `🎲 Özel statlar yeniden atıldı (-${data.cost} jeton)`;
+      else if (action === "wheel") {
+        const r = data.reward;
+        m = r.type === "jeton" ? `🎡 Çark: +${r.amount} jeton!`
+          : r.type === "jackpot" ? `🎉 JACKPOT! ${r.item.name} (Legendary) düştü!`
+          : `🎡 Çark: ${r.item.name} (${r.item.rarity}) düştü!`;
+      }
+      setMsg({ type: "ok", text: m });
+      router.refresh();
+    } catch (e) {
+      setMsg({ type: "err", text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const equipped = useMemo(() => items.filter((i) => i.equipped), [items]);
   const bag = useMemo(
@@ -92,9 +124,15 @@ export function ArenaScreen({
         </div>
         <Metric label="Güç" value={`⚡ ${power}`} glow />
         <Metric label="Seviye" value={String(level)} />
-        <Metric label="Jeton" value={`🎟️ ${tokens}`} />
+        <Metric label="Jeton" value={`🎟️ ${tok}`} />
         <Metric label="Rank" value={`🏆 ${elo}`} />
       </div>
+
+      {msg && (
+        <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${msg.type === "ok" ? "bg-green-900/40 text-green-300" : "bg-red-900/40 text-red-300"}`}>
+          {msg.text}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Ekipman */}
@@ -183,6 +221,13 @@ export function ArenaScreen({
                 <div className="mt-1 text-[11px] text-gray-400">{SLOT[it.slot].icon} {primText(it)}</div>
                 {it.affixes.length > 0 && <div className="text-[11px] text-neon-cyan">{affixText(it)}</div>}
                 {it.passive && <div className="text-[11px] text-neon-gold">✨ {it.passive}</div>}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <button onClick={() => econ("upgrade", it.id)} disabled={busy} className="rounded bg-bg-hover px-2 py-0.5 text-[10px] hover:bg-accent-soft disabled:opacity-50">⬆️ Yükselt</button>
+                  {it.affixes.length > 0 && (
+                    <button onClick={() => econ("reroll", it.id)} disabled={busy} className="rounded bg-bg-hover px-2 py-0.5 text-[10px] hover:bg-accent-soft disabled:opacity-50">🎲 Reroll</button>
+                  )}
+                  <button onClick={() => econ("salvage", it.id)} disabled={busy} className="rounded bg-bg-hover px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/40 disabled:opacity-50">🔥 Erit</button>
+                </div>
               </div>
             ))}
           </div>
@@ -191,12 +236,13 @@ export function ArenaScreen({
 
       {/* Atölye (Dilim 4) */}
       <section className="card mt-4">
-        <h2 className="mb-3 text-sm font-medium text-neon-purple">Atölye</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {["🔥 Erit", "⬆️ Yükselt", "🎡 Şans çarkı"].map((t) => (
-            <button key={t} disabled className="btn-ghost opacity-50" title="Yakında (Dilim 4)">{t}</button>
-          ))}
-        </div>
+        <h2 className="mb-1 text-sm font-medium text-neon-purple">Atölye</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          🔥 Erit · ⬆️ Yükselt · 🎲 Reroll → çantadaki eşyaların üstünde. Şans çarkı 50 jeton.
+        </p>
+        <button className="btn" disabled={busy || tok < 50} onClick={() => econ("wheel")}>
+          🎡 Şans Çarkı (50 🎟️)
+        </button>
       </section>
     </div>
   );
