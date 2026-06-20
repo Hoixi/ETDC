@@ -120,6 +120,9 @@ model ArenaPlayer {
   elo            Int       @default(1000)
   wins           Int       @default(0)
   losses         Int       @default(0)
+  stage          Int       @default(1) // /kas aşaması — boss yenilince ilerler, iLvl bunu takip eder
+  skills         Json      @default("{}") // pasif skill tree: { nodeId: rank }
+  abilities      Json      @default("{}") // aktif yetenekler: { owned, equipped, addonsOwned, attached }
   // Idle kasma oturumu (tek aktif oturum)
   grindEndsAt    DateTime? // null = oturum yok
   grindCollected Boolean   @default(true)

@@ -2,7 +2,7 @@
 import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from "discord.js";
 import { prisma } from "@hoixi/db";
 import type { Command } from "../types.js";
-import { getPlayer, levelProgress } from "../features/arena/index.js";
+import { getPlayer, levelProgress, availablePoints, parseSkills } from "../features/arena/index.js";
 
 const profil: Command = {
   data: new SlashCommandBuilder()
@@ -22,6 +22,7 @@ const profil: Command = {
 
     const total = player.wins + player.losses;
     const winRate = total > 0 ? Math.round((player.wins / total) * 100) : 0;
+    const skillPts = availablePoints(player.level, parseSkills(player.skills));
 
     let grind = "boşta";
     if (player.grindEndsAt && !player.grindCollected) {
@@ -36,11 +37,13 @@ const profil: Command = {
       .setAuthor({ name: `${user.username} — Karnaval Arenası`, iconURL: user.displayAvatarURL() })
       .addFields(
         { name: "Seviye", value: `**${prog.level}** (${prog.current}/${prog.needed} XP)`, inline: true },
+        { name: "Stage", value: `🎪 ${player.stage}`, inline: true },
         { name: "Jeton", value: `🎟️ ${player.tokens}`, inline: true },
         { name: "Rank (ELO)", value: `🏆 ${player.elo}`, inline: true },
         { name: "Galibiyet / Mağlubiyet", value: `${player.wins}G / ${player.losses}M (%${winRate})`, inline: true },
         { name: "Envanter", value: `🎒 ${itemCount} eşya`, inline: true },
         { name: "Kasma", value: grind, inline: true },
+        { name: "Yetenek puanı", value: skillPts > 0 ? `🌟 ${skillPts} (panelden harca!)` : "🌟 0", inline: true },
       )
       .setFooter({ text: "Eşyalarını panelden giy: panel.enterthedarkcarnival.com/arena" });
 

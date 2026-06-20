@@ -17,15 +17,17 @@ export interface Fighter {
   thorns: number; // %
   luck: number;
   power: number;
+  abilityNames: string[]; // takılı aktif yetenekler (dövüş log'u için)
 }
 
 const clampPct = (v: number, max: number) => Math.max(0, Math.min(max, v));
 
-export function buildFighter(name: string, level: number, t: StatTotals): Fighter {
+export function buildFighter(name: string, level: number, t: StatTotals, abilityNames: string[] = []): Fighter {
   const a = t.affixes;
   const f: Fighter = {
     name,
     level,
+    abilityNames,
     hp: 100 + level * 25 + t.hp,
     atk: 8 + level * 3 + t.atk,
     def: 4 + level * 2 + t.def,
@@ -65,6 +67,29 @@ export function buildMonster(level: number): Fighter {
   };
   const names = ["👹 Karanlık Palyaço", "🤡 Sırıtan Kukla", "🎪 Çadır Hayaleti", "🃏 Joker Ruhu", "🕷️ Sahne Canavarı"];
   return buildFighter(names[Math.floor(Math.random() * names.length)], level, totals);
+}
+
+// Stage boss'u — /kas aşamasını geçmek için yenilmesi gereken canavar.
+// Zorluk stage ile artar; ekipmansız oyuncu kaybeder, iLvl'i stage'e denk gear ile kazanılır.
+const STAGE_BOSSES = [
+  "👹 Çadır Devi", "🤡 Baş Palyaço", "🎪 Karanlık Ringmaster", "🃏 Kıkırdayan Joker",
+  "🕷️ Sahne Devi", "🎠 Lanetli Atlıkarınca", "🔥 Ateş Yutan", "🎭 Maskeli İnfazcı",
+];
+
+export function buildStageMonster(stage: number): Fighter {
+  const totals: StatTotals = {
+    atk: Math.round(6 + stage * 4.5),
+    def: Math.round(3 + stage * 2.5),
+    hp: Math.round(70 + stage * 40),
+    spd: Math.round(8 + stage * 1.2),
+    luck: 0,
+    affixes:
+      stage >= 4
+        ? { crit: Math.min(30, 5 + stage), dmgReduction: Math.min(25, Math.floor(stage / 2)) }
+        : {},
+  };
+  const name = `${STAGE_BOSSES[(stage - 1) % STAGE_BOSSES.length]} · Stage ${stage}`;
+  return buildFighter(name, stage, totals);
 }
 
 // A'nın kazanma şansı: kübik güç oranı, %8 taban / %92 tavan, Şans küçük bonus.
@@ -110,6 +135,12 @@ export function battle(a: Fighter, b: Fighter, luckA = 0): BattleResult {
       : `⚔️ **${atk.name}** vurdu — **${dmg}** hasar.`;
     if (atk.lifesteal > 0) line += ` 🩸+${Math.round((dmg * atk.lifesteal) / 100)} can çaldı.`;
     log.push(line);
+  }
+
+  // Kazananın takılı yeteneği varsa dövüşte tetiklendiğini göster.
+  if (winner.abilityNames.length > 0) {
+    const used = winner.abilityNames[Math.floor(Math.random() * winner.abilityNames.length)];
+    log.push(`✨ **${winner.name}**, **${used}** yeteneğini ateşledi!`);
   }
 
   log.push(

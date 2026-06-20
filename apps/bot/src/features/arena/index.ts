@@ -2,15 +2,30 @@
 import { prisma, type ArenaItem, type ArenaPlayer, type Rarity, type ItemSlot } from "@hoixi/db";
 import { RARITY, SLOT, AFFIX, type Affix, type AffixType } from "./rarity.js";
 import { buildFighter, type Fighter } from "./combat.js";
+import { skillBonus } from "./skills.js";
+import { abilityBonus, equippedAbilityNames } from "./abilities.js";
 
 export { generateItem, type GeneratedItem } from "./items.js";
 export { makeLoginUrl, panelButtonRow } from "./magicLink.js";
-export { buildFighter, buildMonster, battle, winChance, type Fighter, type BattleResult } from "./combat.js";
+export { buildFighter, buildMonster, buildStageMonster, battle, winChance, type Fighter, type BattleResult } from "./combat.js";
 export { challengeMessage, handleDuelButton, DUEL_CD_MS, DUEL_PREFIX } from "./duel.js";
 export {
   salvageItem, upgradeItem, rerollItem, spinWheel,
   salvageValue, upgradeCost, rerollCost, WHEEL_COST, type WheelReward,
 } from "./economy.js";
+export {
+  SKILL_TREE, SKILL_PATHS, RESPEC_COST,
+  skillBonus, allocateSkill, respecSkills, parseSkills,
+  availablePoints, spentPoints, pathSpent, totalPoints,
+  type SkillNode, type SkillPath, type SkillEffect, type Allocations,
+} from "./skills.js";
+export {
+  ABILITY_CATALOG, ADDON_CATALOG, MAX_ABILITY_SLOTS, MAX_ADDONS,
+  parseAbilities, abilityBonus, equippedAbilityNames,
+  rollAbilityDrop, rollAddonDrop, abilityName, addonName,
+  equipAbility, unequipAbility, attachAddon, detachAddon,
+  type AbilityDef, type AbilityState, type AbilityEffect,
+} from "./abilities.js";
 export * from "./rarity.js";
 
 export const GRIND_MS = 60 * 60 * 1000; // 1 saat
@@ -141,7 +156,20 @@ export function aggregateStats(items: ArenaItem[]): StatTotals {
   return t;
 }
 
-// Bir oyuncunun giyili ekipmanından dövüşçü kur.
+// İki stat toplamını birleştir (gear + skill tree bonusu).
+export function mergeTotals(a: StatTotals, b: StatTotals): StatTotals {
+  const t: StatTotals = {
+    atk: a.atk + b.atk, def: a.def + b.def, hp: a.hp + b.hp,
+    spd: a.spd + b.spd, luck: a.luck + b.luck,
+    affixes: { ...a.affixes },
+  };
+  for (const [k, v] of Object.entries(b.affixes) as [AffixType, number][]) {
+    t.affixes[k] = (t.affixes[k] ?? 0) + v;
+  }
+  return t;
+}
+
+// Bir oyuncunun giyili ekipmanı + skill tree'sinden dövüşçü kur.
 export async function loadFighter(
   guildId: string,
   userId: string,
@@ -149,7 +177,12 @@ export async function loadFighter(
 ): Promise<{ player: ArenaPlayer; fighter: Fighter }> {
   const player = await getPlayer(guildId, userId);
   const equipped = await prisma.arenaItem.findMany({ where: { guildId, userId, equipped: true } });
-  const fighter = buildFighter(name, player.level, aggregateStats(equipped));
+  // Toplam = gear + skill tree + aktif yetenekler.
+  const totals = mergeTotals(
+    mergeTotals(aggregateStats(equipped), skillBonus(player.skills)),
+    abilityBonus(player.abilities),
+  );
+  const fighter = buildFighter(name, player.level, totals, equippedAbilityNames(player.abilities));
   return { player, fighter };
 }
 

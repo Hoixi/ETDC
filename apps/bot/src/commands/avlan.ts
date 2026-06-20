@@ -43,7 +43,7 @@ const avlan: Command = {
 
       // %25 item düşürür
       if (Math.random() < 0.25) {
-        const drop = generateItem(player.level);
+        const drop = generateItem(player.stage);
         await prisma.arenaItem.create({ data: { guildId: guild.id, userId: user.id, ...drop } });
         reward += `\n🎁 Ganimet: ${itemLine(drop)}`;
       }

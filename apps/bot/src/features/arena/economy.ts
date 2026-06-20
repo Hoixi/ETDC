@@ -78,7 +78,7 @@ export async function spinWheel(g: string, u: string): Promise<Result<{ reward: 
   let reward: WheelReward;
 
   const giveItem = async (forced?: Rarity): Promise<WheelReward["item"]> => {
-    const drop = generateItem(player.level, 0, forced);
+    const drop = generateItem(player.stage, 0, forced);
     await prisma.arenaItem.create({ data: { guildId: g, userId: u, ...drop } });
     return { name: drop.name, rarity: drop.rarity, slot: drop.slot, iLvl: drop.iLvl };
   };

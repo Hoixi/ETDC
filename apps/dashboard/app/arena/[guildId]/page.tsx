@@ -42,8 +42,13 @@ export default async function ArenaCharacter({ params }: { params: { guildId: st
         guildId={params.guildId}
         username={id.name ?? "Oyuncu"}
         level={player?.level ?? 1}
+        stage={player?.stage ?? 1}
         tokens={player?.tokens ?? 0}
         elo={player?.elo ?? 1000}
+        skills={(player?.skills as Record<string, number>) ?? {}}
+        abilities={player?.abilities ?? {}}
+        grindEndsAt={player?.grindEndsAt?.getTime() ?? null}
+        grindCollected={player?.grindCollected ?? true}
         items={itemsRaw.map(toPlain)}
       />
     </main>

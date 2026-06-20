@@ -40,6 +40,19 @@ Bu, `hoixi-bot-spec.md` brief'ine göre kurulan monorepo. Spec'in tamamı
   Yeniden eklenecekse: SoundCloud kaynağı veya paralı yt-to-mp3 API + Lavalink http kaynağı.
 - **14 slash komut**, panel uçtan uca Coolify'da canlı (panel.enterthedarkcarnival.com).
   Deploy: GitHub repo (Hoixi/ETDC) → Coolify Docker Compose (`docker-compose.coolify.yml`).
+- **Karnaval Arenası** (`features/arena/`): idle loot-grinder + PvP/PvE.
+  - **10 slot**: 6 ana (Silah/Alt silah/Kask/Zırh/Eldiven/Ayakkabı) + 4 takı (Kolye/Yüzük×2/Küpe).
+    `ItemSlot` enum'da eski HEAD/BODY/ACCESSORY legacy bırakıldı (db push yıkmasın); `remap-slots.sql`
+    deploy'da eski item'ları taşır. Yüzük tek tip (RING) ama 2 slota giyilir (equip API max 2).
+  - **Stage** (`ArenaPlayer.stage`): `/topla`'da o stage boss'una (`buildStageMonster`) dövüş, kazanınca
+    stage++. Drop iLvl stage'i takip eder (`generateItem(stage)`) → ilerlemek için ekipman şart.
+  - **Skill tree** (`skills.ts`, `ArenaPlayer.skills` JSON): Tank/Hasar/Çeviklik, her level 1 puan,
+    jetonla respec. `loadFighter`'da stat'a katılır.
+  - **Aktif yetenekler + addon** (`abilities.ts`, `ArenaPlayer.abilities` JSON): `/topla`'dan düşer,
+    2 slota takılır, addon'larla güçlenir; dövüşte güç katkısı + log tetiği.
+  - Panel mutasyonları bot iç API (`/arena/:g/:u/...`) → `lib/botApi.ts` → proxy route'lar.
+    Panel meta (SLOT/SKILL_TREE/ABILITY_CATALOG) `dashboard/lib/arena.ts`'te bot ile birebir mirror.
+  - `/kas` aktifken panelde `GrindAnimation` (CSS/emoji dövüş sahnesi + geri sayım).
 
 ## Güvenlik (spec bölüm 8 — ihmal etme)
 

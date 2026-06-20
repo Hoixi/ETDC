@@ -126,6 +126,114 @@ export function aggregateStats(items: PlainItem[]): StatTotals {
   return t;
 }
 
+// ---- Pasif skill tree (bot features/arena/skills.ts ile birebir aynı) ----
+export type SkillPath = "TANK" | "DAMAGE" | "AGILITY";
+
+export const SKILL_PATHS: Record<SkillPath, { label: string; emoji: string; color: string }> = {
+  TANK: { label: "Tank", emoji: "🛡️", color: "#3b82f6" },
+  DAMAGE: { label: "Hasar", emoji: "⚔️", color: "#ff2e97" },
+  AGILITY: { label: "Çeviklik", emoji: "🌀", color: "#57f287" },
+};
+
+export interface SkillNode {
+  id: string;
+  path: SkillPath;
+  name: string;
+  desc: string;
+  maxRank: number;
+  requires: number;
+}
+
+export const SKILL_TREE: SkillNode[] = [
+  { id: "thick_skin", path: "TANK", name: "Kalın Deri", desc: "+35 HP", maxRank: 5, requires: 0 },
+  { id: "armor_master", path: "TANK", name: "Zırh Ustası", desc: "+8 DEF", maxRank: 5, requires: 0 },
+  { id: "hardening", path: "TANK", name: "Sertleşme", desc: "+%3 hasar azaltma", maxRank: 5, requires: 5 },
+  { id: "thorn_mail", path: "TANK", name: "Diken Zırhı", desc: "+%5 diken", maxRank: 3, requires: 10 },
+  { id: "sharp_blade", path: "DAMAGE", name: "Keskin Bıçak", desc: "+7 ATK", maxRank: 5, requires: 0 },
+  { id: "hawk_eye", path: "DAMAGE", name: "Avcı Gözü", desc: "+%3 kritik şansı", maxRank: 5, requires: 0 },
+  { id: "savagery", path: "DAMAGE", name: "Vahşet", desc: "+%12 kritik hasarı", maxRank: 5, requires: 5 },
+  { id: "bloodthirst", path: "DAMAGE", name: "Kan Susuzluğu", desc: "+%4 can çalma", maxRank: 3, requires: 10 },
+  { id: "nimble", path: "AGILITY", name: "Atiklik", desc: "+6 SPD", maxRank: 5, requires: 0 },
+  { id: "evasion", path: "AGILITY", name: "Kaçamak", desc: "+%3 kaçınma", maxRank: 5, requires: 0 },
+  { id: "lucky_star", path: "AGILITY", name: "Şanslı Yıldız", desc: "+6 LUCK", maxRank: 5, requires: 5 },
+  { id: "pierce", path: "AGILITY", name: "Delici", desc: "+%5 zırh delme", maxRank: 3, requires: 10 },
+];
+
+export const RESPEC_COST = 100;
+export type Allocations = Record<string, number>;
+const SKILL_IDS = new Set(SKILL_TREE.map((n) => n.id));
+
+export function parseSkills(raw: unknown): Allocations {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Allocations = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (SKILL_IDS.has(k) && typeof v === "number" && v > 0) out[k] = Math.floor(v);
+  }
+  return out;
+}
+export const totalPoints = (level: number) => level;
+export const spentPoints = (a: Allocations) => Object.values(a).reduce((s, v) => s + v, 0);
+export const availablePoints = (level: number, a: Allocations) => totalPoints(level) - spentPoints(a);
+export const pathSpent = (a: Allocations, path: SkillPath) =>
+  SKILL_TREE.filter((n) => n.path === path).reduce((s, n) => s + (a[n.id] ?? 0), 0);
+
+// ---- Aktif yetenekler + addon (bot features/arena/abilities.ts ile birebir aynı) ----
+export const MAX_ABILITY_SLOTS = 2;
+export const MAX_ADDONS = 2;
+
+export interface AbilityDef { key: string; name: string; emoji: string; desc: string }
+
+export const ABILITY_CATALOG: AbilityDef[] = [
+  { key: "fireball", name: "Ateş Topu", emoji: "🔥", desc: "Güçlü saldırı (+ATK, +kritik)" },
+  { key: "shield", name: "Enerji Kalkanı", emoji: "🛡️", desc: "Koruma (+DEF, +hasar azaltma)" },
+  { key: "heal", name: "Şifa", emoji: "💚", desc: "İyileşme (+HP, +tur iyileşme)" },
+  { key: "frenzy", name: "Cinnet", emoji: "⚡", desc: "Hız patlaması (+SPD, +kritik)" },
+  { key: "vampire", name: "Vampirlik", emoji: "🦇", desc: "Can emme (+can çalma, +ATK)" },
+  { key: "quake", name: "Sarsıntı", emoji: "🌋", desc: "Zırh kırıcı (+zırh delme, +ATK)" },
+];
+
+export const ADDON_CATALOG: AbilityDef[] = [
+  { key: "amp", name: "Güçlendirici", emoji: "📈", desc: "+6 ATK" },
+  { key: "bulwark", name: "Siper", emoji: "🧱", desc: "+6 DEF, +20 HP" },
+  { key: "sharpen", name: "Bileyici", emoji: "🗡️", desc: "+%4 kritik şansı" },
+  { key: "heavy", name: "Ağırlık", emoji: "🏋️", desc: "+%15 kritik hasarı" },
+  { key: "leech", name: "Sülük", emoji: "🩸", desc: "+%4 can çalma" },
+  { key: "swift", name: "Tüy", emoji: "🪶", desc: "+5 SPD" },
+];
+
+export const ABILITY_BY_KEY = Object.fromEntries(ABILITY_CATALOG.map((a) => [a.key, a]));
+export const ADDON_BY_KEY = Object.fromEntries(ADDON_CATALOG.map((a) => [a.key, a]));
+
+export interface AbilityState {
+  owned: string[];
+  equipped: string[];
+  addonsOwned: Record<string, number>;
+  attached: Record<string, string[]>;
+}
+
+export function parseAbilities(raw: unknown): AbilityState {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Partial<AbilityState>;
+  const owned = Array.isArray(o.owned) ? o.owned.filter((k) => ABILITY_BY_KEY[k]) : [];
+  const equipped = (Array.isArray(o.equipped) ? o.equipped : [])
+    .filter((k) => owned.includes(k))
+    .slice(0, MAX_ABILITY_SLOTS);
+  const addonsOwned: Record<string, number> = {};
+  if (o.addonsOwned && typeof o.addonsOwned === "object") {
+    for (const [k, v] of Object.entries(o.addonsOwned)) {
+      if (ADDON_BY_KEY[k] && typeof v === "number" && v > 0) addonsOwned[k] = Math.floor(v);
+    }
+  }
+  const attached: Record<string, string[]> = {};
+  if (o.attached && typeof o.attached === "object") {
+    for (const [ak, list] of Object.entries(o.attached)) {
+      if (owned.includes(ak) && Array.isArray(list)) {
+        attached[ak] = (list as string[]).filter((k) => ADDON_BY_KEY[k]).slice(0, MAX_ADDONS);
+      }
+    }
+  }
+  return { owned, equipped, addonsOwned, attached };
+}
+
 export function powerScore(t: StatTotals): number {
   const a = t.affixes;
   return Math.round(

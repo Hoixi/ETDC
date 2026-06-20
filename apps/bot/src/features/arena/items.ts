@@ -70,13 +70,14 @@ export interface GeneratedItem {
   passive: string | null;
 }
 
-// Bir drop üret. playerLevel iLvl'i ölçekler. forceRarity verilirse nadirlik sabitlenir (çark jackpot).
-export function generateItem(playerLevel: number, luck = 0, forceRarity?: Rarity): GeneratedItem {
+// Bir drop üret. tier (genelde oyuncunun /kas stage'i) iLvl'i ölçekler.
+// forceRarity verilirse nadirlik sabitlenir (çark jackpot).
+export function generateItem(tier: number, luck = 0, forceRarity?: Rarity): GeneratedItem {
   const rarity = forceRarity ?? rollRarity(luck);
   const slot = rollSlot();
   const slotDef = SLOT[slot];
-  // iLvl level'la birlikte yukarı ölçeklenir → yüksek levelda yüksek iLvl şansı artar.
-  const iLvl = Math.max(1, playerLevel + randInt(0, Math.ceil(playerLevel / 4) + 2));
+  // iLvl stage ile yukarı ölçeklenir → ilerlemek için o stage'in ekipmanını giymek şart.
+  const iLvl = Math.max(1, tier + randInt(0, Math.ceil(tier / 4) + 2));
 
   // Birincil stat bütçesi → slot ağırlıklarına göre dağıt.
   const budget = Math.round(iLvl * 6 * RARITY[rarity].budgetMult);

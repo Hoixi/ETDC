@@ -2,10 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { GrindAnimation } from "./GrindAnimation";
 import {
   RARITY, SLOT, EQUIP_MAIN, EQUIP_ACC, AFFIX, RARITY_ORDER,
-  aggregateStats, powerScore,
+  SKILL_TREE, SKILL_PATHS, RESPEC_COST,
+  ABILITY_CATALOG, ADDON_CATALOG, ABILITY_BY_KEY, ADDON_BY_KEY, MAX_ABILITY_SLOTS, MAX_ADDONS,
+  aggregateStats, powerScore, parseSkills, availablePoints, spentPoints, pathSpent, parseAbilities,
   type PlainItem, type Slot, type AffixType, type EquipCell,
+  type Allocations, type SkillPath, type AbilityState,
 } from "@/lib/arena";
 
 const STAT_CAP: Record<string, number> = { atk: 400, def: 300, hp: 3000, spd: 200, luck: 150 };
@@ -24,16 +28,66 @@ function affixText(it: PlainItem): string {
 }
 
 export function ArenaScreen({
-  guildId, username, level, tokens, elo, items: initial,
+  guildId, username, level, stage, tokens, elo, skills: initialSkills, abilities: initialAbilities,
+  grindEndsAt, grindCollected, items: initial,
 }: {
-  guildId: string; username: string; level: number; tokens: number; elo: number; items: PlainItem[];
+  guildId: string; username: string; level: number; stage: number; tokens: number; elo: number;
+  skills: Allocations; abilities: unknown; grindEndsAt: number | null; grindCollected: boolean;
+  items: PlainItem[];
 }) {
   const router = useRouter();
   const [items, setItems] = useState<PlainItem[]>(initial);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState<string | null>(null); // sürüklenen kutu key'i
   const [tok, setTok] = useState(tokens);
+  const [skills, setSkills] = useState<Allocations>(() => parseSkills(initialSkills));
+  const [abil, setAbil] = useState<AbilityState>(() => parseAbilities(initialAbilities));
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function ability(
+    action: "equip" | "unequip" | "attach" | "detach",
+    payload: { key?: string; abilityKey?: string; addonKey?: string },
+  ) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/arena/${guildId}/ability`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Hata");
+      setAbil(parseAbilities(data.abilities));
+      router.refresh();
+    } catch (e) {
+      setMsg({ type: "err", text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const skillPointsLeft = availablePoints(level, skills);
+
+  async function skill(action: "allocate" | "respec", nodeId?: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/arena/${guildId}/skill`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, nodeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Hata");
+      setSkills(parseSkills(data.skills));
+      if (typeof data.tokens === "number") setTok(data.tokens);
+      setMsg({ type: "ok", text: action === "respec" ? `🔄 Yetenekler sıfırlandı (-${RESPEC_COST} jeton)` : "Yetenek yükseltildi" });
+      router.refresh();
+    } catch (e) {
+      setMsg({ type: "err", text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function econ(action: "salvage" | "upgrade" | "reroll" | "wheel", itemId?: string) {
     setBusy(true);
@@ -175,10 +229,14 @@ export function ArenaScreen({
           <div className="text-xs text-gray-400">Karnaval Arenası</div>
         </div>
         <Metric label="Güç" value={`⚡ ${power}`} glow />
+        <Metric label="Stage" value={`🎪 ${stage}`} />
         <Metric label="Seviye" value={String(level)} />
+        <Metric label="Puan" value={`🌟 ${skillPointsLeft}`} glow={skillPointsLeft > 0} />
         <Metric label="Jeton" value={`🎟️ ${tok}`} />
         <Metric label="Rank" value={`🏆 ${elo}`} />
       </div>
+
+      <GrindAnimation endsAt={grindEndsAt} collected={grindCollected} stage={stage} />
 
       {msg && (
         <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${msg.type === "ok" ? "bg-green-900/40 text-green-300" : "bg-red-900/40 text-red-300"}`}>
@@ -258,6 +316,162 @@ export function ArenaScreen({
             ))}
           </div>
         )}
+      </section>
+
+      {/* Pasif Yetenekler (Dilim C) */}
+      <section className="card mt-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-neon-purple">
+            Pasif Yetenekler · <span className="text-neon-gold">🌟 {skillPointsLeft} puan</span>
+          </h2>
+          <button
+            className="rounded bg-bg-hover px-3 py-1 text-xs hover:bg-red-900/40 disabled:opacity-50"
+            disabled={busy || spentPoints(skills) === 0 || tok < RESPEC_COST}
+            onClick={() => skill("respec")}
+            title={`Tüm puanları geri al (${RESPEC_COST} jeton)`}
+          >
+            🔄 Sıfırla ({RESPEC_COST} 🎟️)
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {(Object.keys(SKILL_PATHS) as SkillPath[]).map((path) => {
+            const p = SKILL_PATHS[path];
+            const spent = pathSpent(skills, path);
+            return (
+              <div key={path} className="rounded-lg border border-border bg-bg-soft p-3">
+                <div className="mb-2 text-sm font-medium" style={{ color: p.color }}>
+                  {p.emoji} {p.label} <span className="text-[11px] text-gray-500">· {spent} puan</span>
+                </div>
+                <div className="space-y-2">
+                  {SKILL_TREE.filter((n) => n.path === path).map((n) => {
+                    const rank = skills[n.id] ?? 0;
+                    const locked = spent < n.requires;
+                    const maxed = rank >= n.maxRank;
+                    const canAdd = !locked && !maxed && skillPointsLeft > 0 && !busy;
+                    return (
+                      <div key={n.id} className={`rounded-md border p-2 ${locked ? "opacity-50" : ""}`}
+                        style={{ borderColor: rank > 0 ? p.color : "#33214d" }}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-xs font-medium text-white">
+                              {locked ? "🔒 " : ""}{n.name} <span className="text-gray-500">{rank}/{n.maxRank}</span>
+                            </div>
+                            <div className="text-[11px] text-gray-400">
+                              {n.desc}{locked ? ` · ${n.requires} puan gerek` : " / kademe"}
+                            </div>
+                          </div>
+                          <button
+                            className="shrink-0 rounded bg-bg-hover px-2 py-1 text-xs font-bold hover:bg-accent-soft disabled:opacity-30"
+                            disabled={!canAdd}
+                            onClick={() => skill("allocate", n.id)}
+                            title={maxed ? "Maksimum" : locked ? "Kilitli" : "Yükselt"}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Aktif Yetenekler (Dilim D) */}
+      <section className="card mt-4">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-neon-purple">Aktif Yetenekler</h2>
+          <span className="text-xs text-gray-500">{abil.equipped.length}/{MAX_ABILITY_SLOTS} slot · dövüşte tetiklenir</span>
+        </div>
+        <p className="mb-3 text-xs text-gray-500">
+          <code>/topla</code>&apos;dan düşer. {MAX_ABILITY_SLOTS} slota tak; her yeteneğe en fazla {MAX_ADDONS} addon ekle.
+        </p>
+
+        {/* Takılı slotlar */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {Array.from({ length: MAX_ABILITY_SLOTS }).map((_, i) => {
+            const key = abil.equipped[i];
+            const def = key ? ABILITY_BY_KEY[key] : null;
+            const attached = key ? (abil.attached[key] ?? []) : [];
+            const addonPool = Object.entries(abil.addonsOwned).filter(([, c]) => c > 0);
+            return (
+              <div key={i} className="rounded-lg border p-3" style={{ borderColor: def ? "#ff2e97" : "#33214d" }}>
+                <div className="mb-1 text-[11px] text-gray-500">Yetenek Slotu {i + 1}</div>
+                {def ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-medium text-white">{def.emoji} {def.name}</div>
+                      <button className="rounded bg-bg-hover px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/40 disabled:opacity-50"
+                        disabled={busy} onClick={() => ability("unequip", { key })}>Çıkar</button>
+                    </div>
+                    <div className="text-[11px] text-gray-400">{def.desc}</div>
+                    {/* Takılı addonlar */}
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {attached.map((ak, j) => (
+                        <button key={j} className="rounded bg-accent-soft px-2 py-0.5 text-[10px] text-neon-cyan hover:bg-red-900/40 disabled:opacity-50"
+                          disabled={busy} title="Sök" onClick={() => ability("detach", { abilityKey: key, addonKey: ak })}>
+                          {ADDON_BY_KEY[ak]?.emoji} {ADDON_BY_KEY[ak]?.name} ✕
+                        </button>
+                      ))}
+                      {attached.length === 0 && <span className="text-[10px] text-gray-600">addon yok</span>}
+                    </div>
+                    {/* Eklenebilir addonlar */}
+                    {attached.length < MAX_ADDONS && addonPool.length > 0 && (
+                      <div className="mt-2 border-t border-border pt-2">
+                        <div className="mb-1 text-[10px] text-gray-500">Addon ekle:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {addonPool.map(([ak, c]) => (
+                            <button key={ak} className="rounded bg-bg-hover px-2 py-0.5 text-[10px] hover:bg-accent-soft disabled:opacity-50"
+                              disabled={busy} onClick={() => ability("attach", { abilityKey: key, addonKey: ak })}>
+                              + {ADDON_BY_KEY[ak]?.emoji} {ADDON_BY_KEY[ak]?.name} ({c})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex h-16 items-center justify-center text-xs text-gray-600">boş slot</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Sahip olunan (takılı olmayan) yetenekler */}
+        <div className="mt-3">
+          <div className="mb-1 text-[11px] text-gray-500">Yeteneklerin</div>
+          <div className="flex flex-wrap gap-2">
+            {abil.owned.filter((k) => !abil.equipped.includes(k)).map((k) => (
+              <button key={k} className="rounded-md border border-border bg-bg-soft px-2 py-1 text-xs hover:border-neon-pink disabled:opacity-50"
+                disabled={busy || abil.equipped.length >= MAX_ABILITY_SLOTS}
+                title={abil.equipped.length >= MAX_ABILITY_SLOTS ? "Slotlar dolu" : "Tak"}
+                onClick={() => ability("equip", { key: k })}>
+                {ABILITY_BY_KEY[k]?.emoji} {ABILITY_BY_KEY[k]?.name} <span className="text-neon-gold">+ Tak</span>
+              </button>
+            ))}
+            {abil.owned.filter((k) => !abil.equipped.includes(k)).length === 0 && (
+              <span className="text-xs text-gray-600">Tüm yeteneklerin takılı ya da henüz yeteneğin yok.</span>
+            )}
+          </div>
+        </div>
+
+        {/* Addon havuzu */}
+        <div className="mt-3">
+          <div className="mb-1 text-[11px] text-gray-500">Addon havuzun</div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(abil.addonsOwned).filter(([, c]) => c > 0).map(([ak, c]) => (
+              <span key={ak} className="rounded-md bg-bg-soft px-2 py-1 text-xs text-gray-300">
+                {ADDON_BY_KEY[ak]?.emoji} {ADDON_BY_KEY[ak]?.name} ×{c}
+              </span>
+            ))}
+            {Object.values(abil.addonsOwned).every((c) => c <= 0) && (
+              <span className="text-xs text-gray-600">Henüz addon yok — <code>/topla</code> ile düşür.</span>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Atölye (Dilim 4) */}

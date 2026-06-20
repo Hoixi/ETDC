@@ -79,6 +79,20 @@ export const botApi = {
     request<{ cost: number; tokens: number }>(`/arena/${g}/${u}/reroll`, { method: "POST", body: JSON.stringify({ itemId }) }),
   arenaWheel: (g: string, u: string) =>
     request<{ reward: { type: string; amount?: number; item?: { name: string; rarity: string; iLvl: number } }; tokens: number }>(`/arena/${g}/${u}/wheel`, { method: "POST", body: JSON.stringify({}) }),
+  // Arena skill tree
+  arenaSkillAllocate: (g: string, u: string, nodeId: string) =>
+    request<{ skills: Record<string, number>; available: number }>(`/arena/${g}/${u}/skill/allocate`, { method: "POST", body: JSON.stringify({ nodeId }) }),
+  arenaSkillRespec: (g: string, u: string) =>
+    request<{ skills: Record<string, number>; tokens: number; available: number }>(`/arena/${g}/${u}/skill/respec`, { method: "POST", body: JSON.stringify({}) }),
+  // Arena aktif yetenekler + addon
+  arenaAbilityEquip: (g: string, u: string, key: string) =>
+    request<{ abilities: unknown }>(`/arena/${g}/${u}/ability/equip`, { method: "POST", body: JSON.stringify({ key }) }),
+  arenaAbilityUnequip: (g: string, u: string, key: string) =>
+    request<{ abilities: unknown }>(`/arena/${g}/${u}/ability/unequip`, { method: "POST", body: JSON.stringify({ key }) }),
+  arenaAbilityAttach: (g: string, u: string, abilityKey: string, addonKey: string) =>
+    request<{ abilities: unknown }>(`/arena/${g}/${u}/ability/attach`, { method: "POST", body: JSON.stringify({ abilityKey, addonKey }) }),
+  arenaAbilityDetach: (g: string, u: string, abilityKey: string, addonKey: string) =>
+    request<{ abilities: unknown }>(`/arena/${g}/${u}/ability/detach`, { method: "POST", body: JSON.stringify({ abilityKey, addonKey }) }),
   // Bot ayakta değilse bile panel açılabilsin diye "yumuşak" versiyon.
   safe: {
     async channels(guildId: string): Promise<ApiChannel[]> {

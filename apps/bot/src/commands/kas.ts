@@ -45,8 +45,8 @@ const kas: Command = {
     });
 
     await interaction.reply(
-      `🎪 **Kasmaya başladın!** Karnaval enkazını eşeliyorsun...\n` +
-        `Oturum ${ts(endsAt)} bitecek. Sonra \`/topla\` ile ganimetini al.`,
+      `🎪 **Stage ${player.stage}** kasmaya başladın! Canavarların arasında ganimet eşeliyorsun...\n` +
+        `Oturum ${ts(endsAt)} bitecek. Sonra \`/topla\` ile ganimeti al ve **Stage ${player.stage} boss'una** meydan oku.`,
     );
   },
 };

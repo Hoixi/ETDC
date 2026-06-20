@@ -8,7 +8,10 @@ import { publishPanel, deletePanel, PanelPublishError } from "../features/roles/
 import { drawWelcomeCard } from "../features/welcome/index.js";
 import { applyPlaceholders } from "../lib/placeholders.js";
 import { invalidateGuild } from "../lib/guildConfig.js";
-import { salvageItem, upgradeItem, rerollItem, spinWheel } from "../features/arena/index.js";
+import {
+  salvageItem, upgradeItem, rerollItem, spinWheel, allocateSkill, respecSkills,
+  equipAbility, unequipAbility, attachAddon, detachAddon,
+} from "../features/arena/index.js";
 
 export async function startApi(client: Client): Promise<void> {
   if (!env.INTERNAL_API_KEY) {
@@ -178,6 +181,34 @@ export async function startApi(client: Client): Promise<void> {
   app.post<{ Params: ArenaParams }>(
     "/arena/:guildId/:userId/wheel",
     async (req, reply) => send(reply, await spinWheel(req.params.guildId, req.params.userId)),
+  );
+
+  // --- Arena skill tree ---
+  app.post<{ Params: ArenaParams; Body: { nodeId: string } }>(
+    "/arena/:guildId/:userId/skill/allocate",
+    async (req, reply) => send(reply, await allocateSkill(req.params.guildId, req.params.userId, req.body.nodeId)),
+  );
+  app.post<{ Params: ArenaParams }>(
+    "/arena/:guildId/:userId/skill/respec",
+    async (req, reply) => send(reply, await respecSkills(req.params.guildId, req.params.userId)),
+  );
+
+  // --- Arena aktif yetenekler + addon ---
+  app.post<{ Params: ArenaParams; Body: { key: string } }>(
+    "/arena/:guildId/:userId/ability/equip",
+    async (req, reply) => send(reply, await equipAbility(req.params.guildId, req.params.userId, req.body.key)),
+  );
+  app.post<{ Params: ArenaParams; Body: { key: string } }>(
+    "/arena/:guildId/:userId/ability/unequip",
+    async (req, reply) => send(reply, await unequipAbility(req.params.guildId, req.params.userId, req.body.key)),
+  );
+  app.post<{ Params: ArenaParams; Body: { abilityKey: string; addonKey: string } }>(
+    "/arena/:guildId/:userId/ability/attach",
+    async (req, reply) => send(reply, await attachAddon(req.params.guildId, req.params.userId, req.body.abilityKey, req.body.addonKey)),
+  );
+  app.post<{ Params: ArenaParams; Body: { abilityKey: string; addonKey: string } }>(
+    "/arena/:guildId/:userId/ability/detach",
+    async (req, reply) => send(reply, await detachAddon(req.params.guildId, req.params.userId, req.body.abilityKey, req.body.addonKey)),
   );
 
   // Hata yakalayıcı
