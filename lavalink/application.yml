@@ -34,14 +34,18 @@ lavalink:
 plugins:
   youtube:
     enabled: true
-    # Datacenter IP'lerinde bot-kontrolünü en aza indiren client seti.
-    # Hâlâ "sign in to confirm" alırsan oauth aç (README notuna bak).
+    # Hetzner datacenter IP'si "This video requires login" yiyor → oauth şart.
+    # İlk açılışta loglarda google.com/device kodu çıkar; BURNER Google hesabıyla onayla.
+    # Onaylanan refresh token'ı kalıcı yapmak için Coolify env'ine ekle:
+    #   PLUGINS_YOUTUBE_OAUTH_REFRESHTOKEN=<token>
+    oauth:
+      enabled: true
+      refreshToken: "${PLUGINS_YOUTUBE_OAUTH_REFRESHTOKEN:}"
     clients:
       - MUSIC
       - WEB
       - WEBEMBEDDED
       - MWEB
-      - TVHTML5EMBEDDED
       - ANDROID_VR
   lavasrc:
     providers:
