@@ -48,9 +48,17 @@ export const cookieOptions = {
   maxAge: COOKIE_TTL_S,
 };
 
+function readCookieValue(): string | undefined {
+  try {
+    return cookies().get(ARENA_COOKIE)?.value;
+  } catch {
+    return undefined;
+  }
+}
+
 // Arena cookie'sini guild kısıtı olmadan oku (picker yönlendirmesi için).
 export function readArenaSession(): { discordId: string; guildId: string; name?: string } | null {
-  const c = verify(SECRET, cookies().get(ARENA_COOKIE)?.value);
+  const c = verify(SECRET, readCookieValue());
   return c ? { discordId: c.d, guildId: c.g, name: c.n } : null;
 }
 
@@ -58,7 +66,7 @@ export function readArenaSession(): { discordId: string; guildId: string; name?:
 export async function getArenaIdentity(
   guildId: string,
 ): Promise<{ discordId: string; name?: string } | null> {
-  const c = verify(SECRET, cookies().get(ARENA_COOKIE)?.value);
+  const c = verify(SECRET, readCookieValue());
   if (c && c.g === guildId) return { discordId: c.d, name: c.n };
 
   const session = await auth();
