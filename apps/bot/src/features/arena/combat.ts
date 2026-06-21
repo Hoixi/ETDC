@@ -69,6 +69,34 @@ export function buildMonster(level: number): Fighter {
   return buildFighter(names[Math.floor(Math.random() * names.length)], level, totals);
 }
 
+// /avlan canavarı — oyuncunun GERÇEK gücüne (gear+skill+yetenek dahil) göre ölçeklenir.
+// k çarpanı varyans katar: bazen rakip daha güçlü çıkar ve oyuncu kaybedebilir.
+const HUNT_NAMES = ["👹 Karanlık Palyaço", "🤡 Sırıtan Kukla", "🎪 Çadır Hayaleti", "🃏 Joker Ruhu", "🕷️ Sahne Canavarı", "👺 Maskeli Cellat"];
+
+export function buildHuntMonster(p: Fighter): Fighter {
+  const k = 0.75 + Math.random() * 0.55; // 0.75–1.30x oyuncu gücü
+  const m: Fighter = {
+    name: HUNT_NAMES[Math.floor(Math.random() * HUNT_NAMES.length)],
+    level: p.level,
+    abilityNames: [],
+    hp: Math.max(50, Math.round(p.hp * k)),
+    atk: Math.max(5, Math.round(p.atk * k)),
+    def: Math.round(p.def * k),
+    spd: Math.round(p.spd * k),
+    crit: clampPct(p.crit * k, 75),
+    critDmg: p.critDmg,
+    lifesteal: clampPct(p.lifesteal * k, 60),
+    dodge: clampPct(p.dodge * k, 40),
+    dmgReduction: clampPct(p.dmgReduction * k, 60),
+    penetration: clampPct(p.penetration * k, 80),
+    thorns: clampPct(p.thorns * k, 50),
+    luck: 0,
+    power: 0,
+  };
+  m.power = powerOf(m);
+  return m;
+}
+
 // Stage boss'u — /kas aşamasını geçmek için yenilmesi gereken canavar.
 // Zorluk stage ile artar; ekipmansız oyuncu kaybeder, iLvl'i stage'e denk gear ile kazanılır.
 const STAGE_BOSSES = [

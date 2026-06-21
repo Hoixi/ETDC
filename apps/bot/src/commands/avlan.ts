@@ -2,7 +2,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { prisma } from "@hoixi/db";
 import type { Command } from "../types.js";
-import { loadFighter, buildMonster, battle, addXp, generateItem, itemLine } from "../features/arena/index.js";
+import { loadFighter, buildHuntMonster, battle, addXp, generateItem, itemLine } from "../features/arena/index.js";
 import { getArenaConfig } from "../lib/guildConfig.js";
 
 const fmtCd = (ms: number) => (ms >= 60_000 ? `${Math.ceil(ms / 60_000)} dk` : `${Math.ceil(ms / 1000)} sn`);
@@ -26,13 +26,14 @@ const avlan: Command = {
       return;
     }
 
-    const monster = buildMonster(player.level);
+    const monster = buildHuntMonster(fighter);
     const res = battle(fighter, monster, fighter.luck);
     const won = res.winner === fighter;
 
     let reward = "";
     if (won) {
-      const tokens = 10 + player.level * 2;
+      // Zorluk arttı → ödül de güce/stage'e göre biraz daha cömert.
+      const tokens = 10 + player.level * 2 + player.stage * 3;
       const xp = 30;
       await prisma.arenaPlayer.update({
         where: { guildId_userId: { guildId: guild.id, userId: user.id } },
