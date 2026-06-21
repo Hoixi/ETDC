@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder kıyafet (Cambaz). Gövde torsosunu kaplar. -->
+  <g>
+    <!-- kollar -->
+    <rect x="334" y="342" width="66" height="170" rx="30" fill="#0f8c80"/>
+    <rect x="624" y="342" width="66" height="170" rx="30" fill="#0f8c80"/>
+    <!-- tunik -->
+    <rect x="374" y="332" width="276" height="300" rx="44" fill="#17b3a3"/>
+    <!-- yaka -->
+    <path d="M460 332 L512 392 L564 332 Z" fill="#0c6f66"/>
+    <!-- gögüs şeridi -->
+    <rect x="492" y="332" width="40" height="270" fill="#ff2e97" opacity="0.85"/>
+    <!-- kemer -->
+    <rect x="374" y="560" width="276" height="34" fill="#ffc83d"/>
+  </g>
+</svg>

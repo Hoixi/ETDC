@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder kıyafet (Palyaço). -->
+  <g>
+    <rect x="334" y="342" width="66" height="170" rx="30" fill="#7a1f5c"/>
+    <rect x="624" y="342" width="66" height="170" rx="30" fill="#7a1f5c"/>
+    <rect x="374" y="332" width="276" height="300" rx="44" fill="#ff2e97"/>
+    <!-- fırfır yaka -->
+    <path d="M448 336 Q512 372 576 336 Q560 360 512 364 Q464 360 448 336 Z" fill="#ffffff"/>
+    <!-- puantiyeler -->
+    <g fill="#ffffff">
+      <circle cx="440" cy="420" r="18"/>
+      <circle cx="560" cy="430" r="16"/>
+      <circle cx="500" cy="500" r="20"/>
+      <circle cx="430" cy="560" r="14"/>
+      <circle cx="580" cy="540" r="15"/>
+    </g>
+  </g>
+</svg>

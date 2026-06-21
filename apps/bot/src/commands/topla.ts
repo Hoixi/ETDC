@@ -23,6 +23,10 @@ import {
 import { getArenaConfig } from "../lib/guildConfig.js";
 
 const ts = (d: Date) => `<t:${Math.floor(d.getTime() / 1000)}:R>`;
+const randInt = (a: number, b: number) => Math.floor(Math.random() * (b - a + 1)) + a;
+
+const TICK_MIN = 5; // her 5 dakikada bir stage atlama denemesi
+const MAX_TICKS = 24; // güvenlik tavanı
 
 const topla: Command = {
   data: new SlashCommandBuilder()
@@ -47,24 +51,48 @@ const topla: Command = {
 
     await interaction.deferReply();
 
-    const stage = player.stage;
+    const startStage = player.stage;
+    const cfg = await getArenaConfig(guild.id);
+
+    // Oturum boyunca her TICK_MIN dakikada bir stage atlama denemesi.
+    const attempts = Math.max(1, Math.min(MAX_TICKS, Math.floor(cfg.grindMinutes / TICK_MIN)));
+
+    // Dövüşçü: giyili ekipman + skill tree + yetenekler (oturum boyu sabit).
+    const { fighter } = await loadFighter(guild.id, user.id, user.username);
+
+    // Stage tırmanışı: kazanınca üst stage, kaybedince aynı stage tekrar denenir.
+    let curStage = startStage;
+    let advanced = 0;
+    const marks: string[] = [];
+    let lastRes = battle(fighter, buildStageMonster(curStage), fighter.luck);
+    for (let i = 0; i < attempts; i++) {
+      const res = i === 0 ? lastRes : battle(fighter, buildStageMonster(curStage), fighter.luck);
+      lastRes = res;
+      if (res.winner === fighter) {
+        marks.push("✅");
+        curStage += 1;
+        advanced += 1;
+      } else {
+        marks.push("❌");
+      }
+    }
+    const endStage = curStage;
 
     // Giyili Şans drop kalitesini artırır.
-    const equipped = await prisma.arenaItem.findMany({ where: { guildId: guild.id, userId: user.id, equipped: true } });
-    const luck = aggregateStats(equipped).luck;
+    const luck = aggregateStats(await prisma.arenaItem.findMany({
+      where: { guildId: guild.id, userId: user.id, equipped: true },
+    })).luck;
 
-    // Ganimet üret (iLvl stage'e göre ölçeklenir, adet panelden ayarlı).
-    const cfg = await getArenaConfig(guild.id);
+    // Ganimet: geçilen stage aralığına göre (tırmandıkça daha iyi iLvl).
     const drops: GeneratedItem[] = Array.from({ length: cfg.dropsPerSession }, () =>
-      generateItem(stage, luck),
+      generateItem(randInt(startStage, endStage), luck),
     );
-
     await prisma.arenaItem.createMany({
       data: drops.map((d) => ({ guildId: guild.id, userId: user.id, ...d })),
     });
 
-    // XP: taban + nadirlik bonusu
-    const xpGain = 60 + drops.reduce((s, d) => s + RARITY_ORDER.indexOf(d.rarity) * 15, 0);
+    // XP: taban + nadirlik bonusu + geçilen stage bonusu
+    const xpGain = 60 + drops.reduce((s, d) => s + RARITY_ORDER.indexOf(d.rarity) * 15, 0) + advanced * 25;
     const { leveledUp, newLevel } = await addXp(guild.id, user.id, xpGain);
 
     // Yetenek / addon drop'u (nadir): yetenekler dövüşte kullanılır, panelden takılır.
@@ -83,38 +111,34 @@ const topla: Command = {
       dropMsgs.push(`🧩 Addon düştü: **${addonName(dk)}**`);
     }
 
-    // Stage boss dövüşü: giyili ekipmanla bu stage'in canavarına meydan oku.
-    const { fighter } = await loadFighter(guild.id, user.id, user.username);
-    const monster = buildStageMonster(stage);
-    const res = battle(fighter, monster, fighter.luck);
-    const won = res.winner === fighter;
-    const nextStage = won ? stage + 1 : stage;
-
     await prisma.arenaPlayer.update({
       where: { guildId_userId: { guildId: guild.id, userId: user.id } },
       data: {
         grindCollected: true,
         grindEndsAt: null,
-        stage: nextStage,
+        stage: endStage,
         abilities: abilities as unknown as Prisma.InputJsonValue,
       },
     });
 
-    const stageOutcome = won
-      ? `🏆 **Stage ${stage} geçildi!** Sıradaki: **Stage ${nextStage}** 🎉 (canavarlar güçlenecek!)`
-      : `💀 **Stage ${stage} boss'unu geçemedin.** Düşen ekipmanı panelden kuşan ve tekrar dene!\n` +
-        `Güç: ⚡${fighter.power} vs 👹${monster.power}`;
+    const stageSummary =
+      advanced > 0
+        ? `🏆 **Stage ${startStage} → Stage ${endStage}** (+${advanced})`
+        : `💀 **Stage ${startStage}** geçilemedi — daha iyi ekipman kuşan!`;
+    const stageValue =
+      `Denemeler: ${marks.join("")}\n${stageSummary}\n` +
+      `⚡ Güç ${fighter.power} · sıradaki hedef 👹 Stage ${endStage}`;
 
-    // En yüksek nadirliğe göre embed rengi (kaybedince kırmızı)
+    // En yüksek nadirliğe göre embed rengi
     const best = drops.reduce((a, b) => (RARITY_ORDER.indexOf(b.rarity) > RARITY_ORDER.indexOf(a.rarity) ? b : a));
     const embed = new EmbedBuilder()
-      .setColor(won ? RARITY[best.rarity].color : 0xed4245)
-      .setAuthor({ name: `${user.username} · Stage ${stage} ganimeti 🎁` })
+      .setColor(advanced > 0 ? RARITY[best.rarity].color : 0xed4245)
+      .setAuthor({ name: `${user.username} · Stage ${startStage} kasması 🎁` })
       .setDescription(drops.map((d) => itemLine(d)).join("\n"))
-      .addFields({
-        name: `🎪 ${monster.name} — Boss Dövüşü`,
-        value: `${res.log.join("\n")}\n\n${stageOutcome}`,
-      })
+      .addFields(
+        { name: `🎪 Stage İlerlemesi (${attempts} deneme)`, value: stageValue },
+        { name: "Son dövüş", value: lastRes.log.slice(-3).join("\n") },
+      )
       .setFooter({ text: `+${xpGain} XP${leveledUp ? ` · 🎉 Level ${newLevel}!` : ""} · panelden giy: panel.enterthedarkcarnival.com/arena` });
 
     if (dropMsgs.length > 0) {

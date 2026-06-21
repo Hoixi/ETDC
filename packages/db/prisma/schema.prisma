@@ -123,6 +123,7 @@ model ArenaPlayer {
   stage          Int       @default(1) // /kas aşaması — boss yenilince ilerler, iLvl bunu takip eder
   skills         Json      @default("{}") // pasif skill tree: { nodeId: rank }
   abilities      Json      @default("{}") // aktif yetenekler: { owned, equipped, addonsOwned, attached }
+  avatar         Json      @default("{}") // modüler avatar seçimi: { body, outfit, face, hair, headwear }
   // Idle kasma oturumu (tek aktif oturum)
   grindEndsAt    DateTime? // null = oturum yok
   grindCollected Boolean   @default(true)

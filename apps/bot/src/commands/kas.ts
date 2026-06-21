@@ -44,9 +44,11 @@ const kas: Command = {
       data: { grindEndsAt: endsAt, grindCollected: false },
     });
 
+    const tries = Math.max(1, Math.floor(cfg.grindMinutes / 5));
     await interaction.reply(
-      `🎪 **Stage ${player.stage}** kasmaya başladın! Canavarların arasında ganimet eşeliyorsun...\n` +
-        `Oturum ${ts(endsAt)} bitecek. Sonra \`/topla\` ile ganimeti al ve **Stage ${player.stage} boss'una** meydan oku.`,
+      `🎪 **Stage ${player.stage}** kasmaya başladın! Karakterin canavarlarla savaşıyor...\n` +
+        `Her ~5 dakikada bir üst stage'e geçmeyi dener (**~${tries} deneme**). ` +
+        `Oturum ${ts(endsAt)} bitecek; sonra \`/topla\` ile ganimeti ve ne kadar ilerlediğini gör.`,
     );
   },
 };

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder gövde (ten 2). -->
+  <g fill="#c98a5e">
+    <circle cx="512" cy="200" r="110"/>
+    <rect x="492" y="290" width="40" height="55"/>
+    <rect x="384" y="330" width="256" height="300" rx="46"/>
+    <rect x="338" y="345" width="58" height="240" rx="29"/>
+    <rect x="628" y="345" width="58" height="240" rx="29"/>
+    <rect x="430" y="610" width="74" height="350" rx="34"/>
+    <rect x="520" y="610" width="74" height="350" rx="34"/>
+  </g>
+</svg>

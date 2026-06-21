@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GrindAnimation } from "./GrindAnimation";
+import { AvatarBuilder } from "./AvatarBuilder";
 import {
   RARITY, SLOT, EQUIP_MAIN, EQUIP_ACC, AFFIX, RARITY_ORDER,
   SKILL_TREE, SKILL_PATHS, RESPEC_COST,
@@ -29,11 +30,11 @@ function affixText(it: PlainItem): string {
 
 export function ArenaScreen({
   guildId, username, level, stage, tokens, elo, skills: initialSkills, abilities: initialAbilities,
-  grindEndsAt, grindCollected, items: initial,
+  grindEndsAt, grindCollected, avatar, items: initial,
 }: {
   guildId: string; username: string; level: number; stage: number; tokens: number; elo: number;
   skills: Allocations; abilities: unknown; grindEndsAt: number | null; grindCollected: boolean;
-  items: PlainItem[];
+  avatar: unknown; items: PlainItem[];
 }) {
   const router = useRouter();
   const [items, setItems] = useState<PlainItem[]>(initial);
@@ -237,6 +238,8 @@ export function ArenaScreen({
       </div>
 
       <GrindAnimation endsAt={grindEndsAt} collected={grindCollected} stage={stage} />
+
+      <AvatarBuilder guildId={guildId} avatar={avatar} power={power} stage={stage} />
 
       {msg && (
         <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${msg.type === "ok" ? "bg-green-900/40 text-green-300" : "bg-red-900/40 text-red-300"}`}>

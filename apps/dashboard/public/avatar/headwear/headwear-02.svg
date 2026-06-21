@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder başlık (Domino maske). Gözlerin üstünü kaplar. -->
+  <g>
+    <path d="M444 182 Q512 158 580 182 Q586 214 548 218 L536 200 Q512 192 488 200 L476 218 Q438 214 444 182 Z" fill="#a64dff"/>
+    <circle cx="478" cy="196" r="9" fill="#1a1020"/>
+    <circle cx="546" cy="196" r="9" fill="#1a1020"/>
+    <path d="M512 168 L520 150 L512 156 L504 150 Z" fill="#ffc83d"/>
+  </g>
+</svg>

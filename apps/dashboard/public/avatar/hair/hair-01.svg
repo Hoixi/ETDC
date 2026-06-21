@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder saç (Kıvırcık). Kafanın üstünü kaplar. -->
+  <g fill="#5a3825">
+    <circle cx="452" cy="150" r="42"/>
+    <circle cx="502" cy="122" r="46"/>
+    <circle cx="556" cy="132" r="44"/>
+    <circle cx="592" cy="168" r="36"/>
+    <circle cx="430" cy="186" r="34"/>
+    <circle cx="600" cy="205" r="30"/>
+  </g>
+</svg>

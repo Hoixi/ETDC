@@ -70,7 +70,7 @@ export function GrindAnimation({
           </span>
         ) : (
           <span className="text-neon-gold">
-            🎁 Ganimet hazır! Discord&apos;da <code className="text-neon-pink">/topla</code> ile al ve Stage {stage} boss&apos;una meydan oku.
+            🎁 Ganimet hazır! Discord&apos;da <code className="text-neon-pink">/topla</code> ile al — bakalım kaç stage ilerledin.
           </span>
         )}
       </div>

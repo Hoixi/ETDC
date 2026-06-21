@@ -49,6 +49,7 @@ export default async function ArenaCharacter({ params }: { params: { guildId: st
         abilities={player?.abilities ?? {}}
         grindEndsAt={player?.grindEndsAt?.getTime() ?? null}
         grindCollected={player?.grindCollected ?? true}
+        avatar={player?.avatar ?? {}}
         items={itemsRaw.map(toPlain)}
       />
     </main>

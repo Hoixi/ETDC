@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder yüz (Asık). -->
+  <g>
+    <circle cx="478" cy="198" r="13" fill="#ffffff"/><circle cx="479" cy="199" r="6" fill="#1a1020"/>
+    <circle cx="546" cy="198" r="13" fill="#ffffff"/><circle cx="545" cy="199" r="6" fill="#1a1020"/>
+    <!-- kaşlar -->
+    <path d="M462 176 L494 186" stroke="#3a2418" stroke-width="7" stroke-linecap="round"/>
+    <path d="M562 176 L530 186" stroke="#3a2418" stroke-width="7" stroke-linecap="round"/>
+    <!-- asık ağız -->
+    <path d="M470 250 Q512 222 554 250" stroke="#7a2b2b" stroke-width="9" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

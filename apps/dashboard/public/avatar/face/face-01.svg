@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder yüz (Sırıtış). Kafa merkezi (512,200). -->
+  <g>
+    <circle cx="478" cy="195" r="14" fill="#ffffff"/><circle cx="480" cy="197" r="6" fill="#1a1020"/>
+    <circle cx="546" cy="195" r="14" fill="#ffffff"/><circle cx="544" cy="197" r="6" fill="#1a1020"/>
+    <path d="M468 232 Q512 280 556 232" stroke="#7a2b2b" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="452" cy="228" r="12" fill="#ff8ab0" opacity="0.6"/>
+    <circle cx="572" cy="228" r="12" fill="#ff8ab0" opacity="0.6"/>
+  </g>
+</svg>

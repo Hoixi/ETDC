@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder başlık (Soytarı şapkası). Kafanın tepesinde. -->
+  <g>
+    <path d="M408 128 L466 28 L512 118 Z" fill="#ff2e97"/>
+    <path d="M512 118 L556 24 L616 130 Z" fill="#a64dff"/>
+    <circle cx="466" cy="28" r="15" fill="#ffc83d"/>
+    <circle cx="556" cy="24" r="15" fill="#ffc83d"/>
+    <rect x="400" y="118" width="224" height="28" rx="14" fill="#ffc83d"/>
+  </g>
+</svg>
