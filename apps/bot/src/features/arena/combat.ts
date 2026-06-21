@@ -74,20 +74,25 @@ export function buildMonster(level: number): Fighter {
 const HUNT_NAMES = ["👹 Karanlık Palyaço", "🤡 Sırıtan Kukla", "🎪 Çadır Hayaleti", "🃏 Joker Ruhu", "🕷️ Sahne Canavarı", "👺 Maskeli Cellat"];
 
 export function buildHuntMonster(p: Fighter): Fighter {
-  const k = 0.75 + Math.random() * 0.55; // 0.75–1.30x oyuncu gücü
+  // %18 ihtimalle "Elit": belirgin şekilde daha güçlü → kazansan bile patlayabilirsin.
+  const elite = Math.random() < 0.18;
+  let k = 0.7 + Math.random() * 0.45; // normal: 0.70–1.15x
+  if (elite) k += 0.45; // elit: 1.15–1.60x
+
+  const base = HUNT_NAMES[Math.floor(Math.random() * HUNT_NAMES.length)];
   const m: Fighter = {
-    name: HUNT_NAMES[Math.floor(Math.random() * HUNT_NAMES.length)],
+    name: elite ? `⭐ Elit ${base}` : base,
     level: p.level,
     abilityNames: [],
     hp: Math.max(50, Math.round(p.hp * k)),
     atk: Math.max(5, Math.round(p.atk * k)),
     def: Math.round(p.def * k),
     spd: Math.round(p.spd * k),
-    crit: clampPct(p.crit * k, 75),
-    critDmg: p.critDmg,
+    crit: clampPct(p.crit * k + (elite ? 12 : 0), 75),
+    critDmg: p.critDmg + (elite ? 30 : 0),
     lifesteal: clampPct(p.lifesteal * k, 60),
-    dodge: clampPct(p.dodge * k, 40),
-    dmgReduction: clampPct(p.dmgReduction * k, 60),
+    dodge: clampPct(p.dodge * k + (elite ? 6 : 0), 40),
+    dmgReduction: clampPct(p.dmgReduction * k + (elite ? 8 : 0), 60),
     penetration: clampPct(p.penetration * k, 80),
     thorns: clampPct(p.thorns * k, 50),
     luck: 0,

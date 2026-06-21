@@ -29,21 +29,22 @@ const avlan: Command = {
     const monster = buildHuntMonster(fighter);
     const res = battle(fighter, monster, fighter.luck);
     const won = res.winner === fighter;
+    const isElite = monster.name.startsWith("⭐");
 
     let reward = "";
     if (won) {
-      // Zorluk arttı → ödül de güce/stage'e göre biraz daha cömert.
-      const tokens = 10 + player.level * 2 + player.stage * 3;
-      const xp = 30;
+      // Zorluk arttı → ödül de güce/stage'e göre cömert; elit yenince 2 katı + garanti drop.
+      const tokens = (10 + player.level * 2 + player.stage * 3) * (isElite ? 2 : 1);
+      const xp = isElite ? 60 : 30;
       await prisma.arenaPlayer.update({
         where: { guildId_userId: { guildId: guild.id, userId: user.id } },
         data: { tokens: { increment: tokens }, lastDuelAt: new Date() },
       });
       await addXp(guild.id, user.id, xp);
-      reward = `🎟️ +${tokens} jeton · +${xp} XP`;
+      reward = `${isElite ? "⭐ **ELİT AVI!** " : ""}🎟️ +${tokens} jeton · +${xp} XP`;
 
-      // %25 item düşürür
-      if (Math.random() < 0.25) {
+      // Elit garanti item, normal %25
+      if (isElite || Math.random() < 0.25) {
         const drop = generateItem(player.stage);
         await prisma.arenaItem.create({ data: { guildId: guild.id, userId: user.id, ...drop } });
         reward += `\n🎁 Ganimet: ${itemLine(drop)}`;
