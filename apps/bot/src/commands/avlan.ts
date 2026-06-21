@@ -2,7 +2,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import { prisma } from "@hoixi/db";
 import type { Command } from "../types.js";
-import { loadFighter, buildHuntMonster, battle, addXp, generateItem, itemLine } from "../features/arena/index.js";
+import { loadFighter, buildGearedMonster, battle, addXp, generateItem, itemLine } from "../features/arena/index.js";
 import { getArenaConfig } from "../lib/guildConfig.js";
 
 const fmtCd = (ms: number) => (ms >= 60_000 ? `${Math.ceil(ms / 60_000)} dk` : `${Math.ceil(ms / 1000)} sn`);
@@ -26,10 +26,16 @@ const avlan: Command = {
       return;
     }
 
-    const monster = buildHuntMonster(fighter);
+    // Rakip için tier = giyili ekipmanının ortalama iLvl'i (yoksa stage) → sana yakın seviyede gear.
+    const equipped = await prisma.arenaItem.findMany({ where: { guildId: guild.id, userId: user.id, equipped: true } });
+    const tier = equipped.length
+      ? Math.round(equipped.reduce((s, it) => s + it.iLvl, 0) / equipped.length)
+      : player.stage;
+
+    const isElite = Math.random() < 0.18;
+    const monster = buildGearedMonster(fighter.level, tier, { elite: isElite, basePower: fighter.power });
     const res = battle(fighter, monster, fighter.luck);
     const won = res.winner === fighter;
-    const isElite = monster.name.startsWith("⭐");
 
     let reward = "";
     if (won) {

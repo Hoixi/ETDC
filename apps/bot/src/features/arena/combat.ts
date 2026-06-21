@@ -1,5 +1,7 @@
 // Dövüş motoru. Güç farkı belirleyici ama varyans + garantili %8 taban ("underdog") var.
 import type { StatTotals } from "./index.js";
+import { generateItem, type GeneratedItem } from "./items.js";
+import type { Affix, AffixType } from "./rarity.js";
 
 export interface Fighter {
   name: string;
@@ -73,30 +75,59 @@ export function buildMonster(level: number): Fighter {
 // k çarpanı varyans katar: bazen rakip daha güçlü çıkar ve oyuncu kaybedebilir.
 const HUNT_NAMES = ["👹 Karanlık Palyaço", "🤡 Sırıtan Kukla", "🎪 Çadır Hayaleti", "🃏 Joker Ruhu", "🕷️ Sahne Canavarı", "👺 Maskeli Cellat"];
 
-export function buildHuntMonster(p: Fighter): Fighter {
-  // %18 ihtimalle "Elit": belirgin şekilde daha güçlü → kazansan bile patlayabilirsin.
-  const elite = Math.random() < 0.18;
-  let k = 0.7 + Math.random() * 0.45; // normal: 0.70–1.15x
-  if (elite) k += 0.45; // elit: 1.15–1.60x
+// Üretilen bir item'ın kabaca gücü (best-of seçiminde kullanılır).
+function genItemPower(it: GeneratedItem): number {
+  let p = it.atk + it.def * 0.8 + it.hp * 0.12 + it.spd * 0.6 + it.luck * 0.3;
+  for (const a of it.affixes as unknown as Affix[]) p += a.value;
+  return p;
+}
 
+// /avlan canavarı — rakibe rastgele item seti giydirilir → her sefer farklı ARKETİP
+// (kimi tanky, kimi kritik canavarı). Toplam güç oyuncuya göre varyansla normalize edilir
+// ki adil ama tahmin edilemez olsun. Elit: daha güçlü hedef + daha iyi rolllar.
+export function buildGearedMonster(
+  level: number,
+  tier: number,
+  opts: { elite?: boolean; basePower: number },
+): Fighter {
+  const elite = opts.elite ?? false;
+  const SLOTS = 10; // tam loadout kadar parça
+  const candidates = elite ? 3 : 2; // best-of-N → daha iyi roll
+  const useTier = Math.max(1, Math.round(tier) + (elite ? 3 : 0));
+
+  // 1) Rastgele gear → arketip + affix profili.
+  const t: StatTotals = { atk: 0, def: 0, hp: 0, spd: 0, luck: 0, affixes: {} };
+  for (let i = 0; i < SLOTS; i++) {
+    let best = generateItem(useTier);
+    for (let c = 1; c < candidates; c++) {
+      const cand = generateItem(useTier);
+      if (genItemPower(cand) > genItemPower(best)) best = cand;
+    }
+    t.atk += best.atk; t.def += best.def; t.hp += best.hp; t.spd += best.spd; t.luck += best.luck;
+    for (const a of best.affixes as unknown as Affix[]) {
+      t.affixes[a.type as AffixType] = (t.affixes[a.type as AffixType] ?? 0) + a.value;
+    }
+  }
   const base = HUNT_NAMES[Math.floor(Math.random() * HUNT_NAMES.length)];
+  const g = buildFighter(elite ? `⭐ Elit ${base}` : base, level, t);
+
+  // 2) Toplam gücü oyuncuya göre normalize et (varyans → bazen patlatır).
+  const v = elite ? 1.15 + Math.random() * 0.4 : 0.8 + Math.random() * 0.45; // elit 1.15–1.55, normal 0.80–1.25
+  const target = Math.max(1, opts.basePower * v);
+  const f = target / Math.max(1, g.power);
+
   const m: Fighter = {
-    name: elite ? `⭐ Elit ${base}` : base,
-    level: p.level,
-    abilityNames: [],
-    hp: Math.max(50, Math.round(p.hp * k)),
-    atk: Math.max(5, Math.round(p.atk * k)),
-    def: Math.round(p.def * k),
-    spd: Math.round(p.spd * k),
-    crit: clampPct(p.crit * k + (elite ? 12 : 0), 75),
-    critDmg: p.critDmg + (elite ? 30 : 0),
-    lifesteal: clampPct(p.lifesteal * k, 60),
-    dodge: clampPct(p.dodge * k + (elite ? 6 : 0), 40),
-    dmgReduction: clampPct(p.dmgReduction * k + (elite ? 8 : 0), 60),
-    penetration: clampPct(p.penetration * k, 80),
-    thorns: clampPct(p.thorns * k, 50),
-    luck: 0,
-    power: 0,
+    ...g,
+    hp: Math.max(50, Math.round(g.hp * f)),
+    atk: Math.max(5, Math.round(g.atk * f)),
+    def: Math.round(g.def * f),
+    spd: Math.round(g.spd * f),
+    crit: clampPct(g.crit * f, 75),
+    lifesteal: clampPct(g.lifesteal * f, 60),
+    dodge: clampPct(g.dodge * f, 40),
+    dmgReduction: clampPct(g.dmgReduction * f, 60),
+    penetration: clampPct(g.penetration * f, 80),
+    thorns: clampPct(g.thorns * f, 50),
   };
   m.power = powerOf(m);
   return m;
