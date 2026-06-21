@@ -17,17 +17,22 @@ const ready: BotEvent<Events.ClientReady> = {
       type: ActivityType.Watching,
     });
 
-    // Slash komutlarını GLOBAL kaydet → botun bulunduğu TÜM sunucularda çalışır.
-    // (Global yayılım ~1 saat sürebilir.) Her deploy'da otomatik güncellenir.
+    // Slash komut kaydı (her deploy'da otomatik):
+    //  - GUILD_ID set'liyse → o sunucuya ANINDA kaydeder (saniyeler içinde görünür).
+    //  - GUILD_ID boşsa     → GLOBAL kaydeder (tüm sunucular ama yayılımı ~1 saat).
+    // Discord aynı isimli komutu hem guild hem global'de gösterirse çiftler; bu yüzden
+    // diğer kapsam temizlenir.
     try {
       const body = (client as HoixiClient).commands.map((cmd) => cmd.data.toJSON());
       const rest = new REST().setToken(env.DISCORD_TOKEN);
-      await rest.put(Routes.applicationCommands(client.user.id), { body });
-      console.log(`🌍 ${body.length} komut global kaydedildi (tüm sunucular).`);
-      // Eski guild-özel komutları temizle ki global ile çiftlenmesin.
       if (env.GUILD_ID) {
-        await rest.put(Routes.applicationGuildCommands(client.user.id, env.GUILD_ID), { body: [] });
-        console.log(`🧹 "${env.GUILD_ID}" guild komutları temizlendi (global'e geçildi).`);
+        await rest.put(Routes.applicationGuildCommands(client.user.id, env.GUILD_ID), { body });
+        console.log(`⚡ ${body.length} komut "${env.GUILD_ID}" sunucusuna anında kaydedildi.`);
+        // Global kapsamı temizle ki çiftlenme olmasın (global deneyinden kalmış olabilir).
+        await rest.put(Routes.applicationCommands(client.user.id), { body: [] });
+      } else {
+        await rest.put(Routes.applicationCommands(client.user.id), { body });
+        console.log(`🌍 ${body.length} komut global kaydedildi (~1 saat yayılır).`);
       }
     } catch (err) {
       console.error("Komut kaydı başarısız (bot yine de çalışır):", err);
