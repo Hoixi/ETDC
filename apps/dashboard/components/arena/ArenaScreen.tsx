@@ -28,6 +28,11 @@ function affixText(it: PlainItem): string {
   return it.affixes.map((a) => `${AFFIX[a.type].label} ${a.value}${AFFIX[a.type].suffix}`).join(" · ");
 }
 
+// Tek bir eşyanın gücü (sıralama + picker için).
+const itemPower = (it: PlainItem) => powerScore(aggregateStats([it]));
+// Envanter filtresinde kullanılan aktif slotlar (legacy hariç).
+const INV_SLOTS: Slot[] = ["WEAPON", "OFFHAND", "HELMET", "ARMOR", "GLOVES", "BOOTS", "NECKLACE", "RING", "EARRING"];
+
 export function ArenaScreen({
   guildId, username, level, stage, tokens, elo, skills: initialSkills, abilities: initialAbilities,
   grindEndsAt, grindCollected, avatar, items: initial,
@@ -45,6 +50,10 @@ export function ArenaScreen({
   const [abil, setAbil] = useState<AbilityState>(() => parseAbilities(initialAbilities));
   const [bulkSel, setBulkSel] = useState<Set<Rarity>>(() => new Set<Rarity>(["COMMON", "UNCOMMON", "RARE"]));
   const [confirmBulk, setConfirmBulk] = useState(false);
+  const [fSlot, setFSlot] = useState<Slot | "ALL">("ALL");
+  const [fRarity, setFRarity] = useState<Rarity | "ALL">("ALL");
+  const [sortBy, setSortBy] = useState<"power" | "ilvl" | "rarity">("power");
+  const [pickerCell, setPickerCell] = useState<EquipCell | null>(null);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // Toplu erit: seçili nadirliklerdeki giyili OLMAYAN eşya sayısı.
@@ -161,12 +170,17 @@ export function ArenaScreen({
   }
 
   const equipped = useMemo(() => items.filter((i) => i.equipped), [items]);
-  const bag = useMemo(
-    () => items.filter((i) => !i.equipped).sort(
-      (a, b) => RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) || b.iLvl - a.iLvl,
-    ),
-    [items],
-  );
+  const bag = useMemo(() => {
+    let list = items.filter((i) => !i.equipped);
+    if (fSlot !== "ALL") list = list.filter((i) => i.slot === fSlot);
+    if (fRarity !== "ALL") list = list.filter((i) => i.rarity === fRarity);
+    const cmp: Record<typeof sortBy, (a: PlainItem, b: PlainItem) => number> = {
+      power: (a, b) => itemPower(b) - itemPower(a),
+      ilvl: (a, b) => b.iLvl - a.iLvl,
+      rarity: (a, b) => RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) || b.iLvl - a.iLvl,
+    };
+    return [...list].sort(cmp[sortBy]);
+  }, [items, fSlot, fRarity, sortBy]);
   // Tekli slotlar için slot→item; yüzükler için ayrı (en fazla 2, kararlı sıra).
   const bySlot = useMemo(() => {
     const m: Partial<Record<Slot, PlainItem>> = {};
@@ -225,6 +239,47 @@ export function ArenaScreen({
     if (it && it.slot === slot && !it.equipped) api(id, "equip");
   }
 
+  // Toplu çark (x5/x10).
+  async function wheelBulk(count: number) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/arena/${guildId}/economy`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "wheelBulk", count }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Hata");
+      if (typeof data.tokens === "number") setTok(data.tokens);
+      const itc = data.items?.length ?? 0;
+      const net = (data.jetonGained ?? 0) - (data.spent ?? 0);
+      setMsg({ type: "ok", text: `🎡 ${data.spins} çevirme · ${net >= 0 ? "+" : ""}${net} jeton · 🎁 ${itc} eşya (yenile: sayfayı tazele)` });
+      router.refresh();
+    } catch (e) {
+      setMsg({ type: "err", text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Slot değiştirme ekranından eşya seç → giy (yüzükte hedef kutudakiyle değiştir).
+  async function pickEquip(it: PlainItem) {
+    const cell = pickerCell;
+    setPickerCell(null);
+    if (!cell || it.equipped) return;
+    if (cell.ringIndex != null) {
+      const current = equippedRings[cell.ringIndex];
+      if (current && current.id !== it.id) await api(current.id, "unequip");
+    }
+    await api(it.id, "equip");
+  }
+  async function pickUnequip() {
+    const cell = pickerCell;
+    setPickerCell(null);
+    const cur = cell && cellItem(cell);
+    if (cur) await api(cur.id, "unequip");
+  }
+
   // Tek bir paper-doll kutusu (ana ekipman veya takı; yüzük kutuları için ringIndex'li).
   function renderCell(c: EquipCell) {
     const it = cellItem(c);
@@ -237,12 +292,12 @@ export function ArenaScreen({
         onDragOver={(e) => { e.preventDefault(); setOver(c.key); }}
         onDragLeave={() => setOver((s) => (s === c.key ? null : s))}
         onDrop={(e) => onDrop(c.slot, e)}
-        onClick={() => it && !busy && api(it.id, "unequip")}
-        className={`min-h-[92px] rounded-lg border p-3 transition ${
-          it ? "cursor-pointer bg-bg-soft hover:border-red-500" : "border-dashed bg-transparent"
+        onClick={() => !busy && setPickerCell(c)}
+        className={`min-h-[92px] cursor-pointer rounded-lg border p-3 transition hover:border-neon-pink ${
+          it ? "bg-bg-soft" : "border-dashed bg-transparent"
         } ${isOver ? "border-neon-pink shadow-neon" : ""}`}
         style={it ? { borderColor: RARITY[it.rarity].color } : { borderColor: "#33214d" }}
-        title={it ? "Çıkarmak için tıkla" : ""}
+        title="Değiştirmek için tıkla"
       >
         <div className="mb-1 text-[11px] text-gray-500">{SLOT[c.slot].icon} {label}</div>
         {it ? (
@@ -325,7 +380,28 @@ export function ArenaScreen({
       <section className="card mt-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium text-neon-purple">Çanta ({bag.length})</h2>
-          <span className="text-xs text-gray-500">sürükle-bırak ile giy · slota tıkla → çıkar</span>
+          <span className="text-xs text-gray-500">çift tıkla → giy · slota tıkla → değiştir</span>
+        </div>
+        {/* Filtre / sıralama */}
+        <div className="mb-3 flex flex-wrap gap-2">
+          {([
+            { v: fSlot, set: (x: string) => setFSlot(x as Slot | "ALL"), all: "Tüm slotlar",
+              opts: INV_SLOTS.map((s) => ({ value: s, label: `${SLOT[s].icon} ${SLOT[s].label}` })) },
+            { v: fRarity, set: (x: string) => setFRarity(x as Rarity | "ALL"), all: "Tüm nadirlikler",
+              opts: RARITY_ORDER.map((r) => ({ value: r, label: RARITY[r].label })) },
+          ] as const).map((sel, i) => (
+            <select key={i} value={sel.v} onChange={(e) => sel.set(e.target.value)}
+              className="rounded-md border border-border bg-bg-soft px-2 py-1 text-xs text-gray-200">
+              <option value="ALL">{sel.all}</option>
+              {sel.opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          ))}
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "power" | "ilvl" | "rarity")}
+            className="rounded-md border border-border bg-bg-soft px-2 py-1 text-xs text-gray-200">
+            <option value="power">Güç ↓</option>
+            <option value="ilvl">iLvl ↓</option>
+            <option value="rarity">Nadirlik ↓</option>
+          </select>
         </div>
         {bag.length === 0 ? (
           <div className="text-sm text-gray-500">Çanta boş. Discord&apos;da <code>/kas</code> ile eşya kas!</div>
@@ -521,11 +597,13 @@ export function ArenaScreen({
       <section className="card mt-4">
         <h2 className="mb-1 text-sm font-medium text-neon-purple">Atölye</h2>
         <p className="mb-3 text-xs text-gray-500">
-          🔥 Erit · ⬆️ Yükselt · 🎲 Reroll → çantadaki eşyaların üstünde. Şans çarkı 50 jeton.
+          🔥 Erit · ⬆️ Yükselt · 🎲 Reroll → çantadaki eşyaların üstünde. Şans çarkı 50 jeton/çevirme.
         </p>
-        <button className="btn" disabled={busy || tok < 50} onClick={() => econ("wheel")}>
-          🎡 Şans Çarkı (50 🎟️)
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button className="btn" disabled={busy || tok < 50} onClick={() => econ("wheel")}>🎡 x1 (50 🎟️)</button>
+          <button className="btn" disabled={busy || tok < 250} onClick={() => wheelBulk(5)}>🎡 x5 (250 🎟️)</button>
+          <button className="btn" disabled={busy || tok < 500} onClick={() => wheelBulk(10)}>🎡 x10 (500 🎟️)</button>
+        </div>
 
         {/* Toplu erit */}
         <div className="mt-4 border-t border-border pt-3">
@@ -571,6 +649,64 @@ export function ArenaScreen({
           )}
         </div>
       </section>
+
+      {/* Slot değiştirme ekranı (picker) */}
+      {pickerCell && (() => {
+        const cell = pickerCell;
+        const label = cell.ringIndex != null ? `${SLOT.RING.label} ${cell.ringIndex + 1}` : SLOT[cell.slot].label;
+        const current = cellItem(cell);
+        const list = items
+          .filter((i) => i.slot === cell.slot)
+          .sort((a, b) => itemPower(b) - itemPower(a));
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setPickerCell(null)}>
+            <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neon-pink/50 bg-bg-card p-4 shadow-neon"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-neon-purple">{SLOT[cell.slot].icon} {label} — değiştir</h3>
+                <button className="rounded bg-bg-hover px-2 py-1 text-xs hover:bg-accent-soft" onClick={() => setPickerCell(null)}>Kapat ✕</button>
+              </div>
+              {current && (
+                <button className="mb-3 w-full rounded bg-red-900/40 px-3 py-1 text-xs text-red-200 hover:bg-red-900/60 disabled:opacity-50"
+                  disabled={busy} onClick={pickUnequip}>Şu ankini çıkar ({current.name})</button>
+              )}
+              {list.length === 0 ? (
+                <div className="text-sm text-gray-500">Bu slot için eşyan yok. <code>/kas</code> ile düşür.</div>
+              ) : (
+                <div className="space-y-2">
+                  {list.map((it) => {
+                    const isCurrent = current?.id === it.id;
+                    return (
+                      <button
+                        key={it.id}
+                        disabled={busy || isCurrent}
+                        onClick={() => pickEquip(it)}
+                        className={`flex w-full items-center justify-between gap-2 rounded-lg border p-2 text-left transition hover:border-neon-pink disabled:opacity-60 ${isCurrent ? "bg-accent-soft" : "bg-bg-soft"}`}
+                        style={{ borderColor: RARITY[it.rarity].color }}
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-medium text-white">
+                            {it.name}{it.upgrade > 0 ? ` +${it.upgrade}` : ""}
+                            {it.equipped && <span className="ml-1 text-neon-gold">{isCurrent ? "• takılı" : "• başka slotta"}</span>}
+                          </div>
+                          <RarityChip item={it} />
+                          <div className="mt-0.5 text-[11px] text-gray-400">{primText(it)}</div>
+                          {it.affixes.length > 0 && <div className="text-[11px] text-neon-cyan">{affixText(it)}</div>}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-sm font-bold text-neon-pink">⚡{itemPower(it)}</div>
+                          {!isCurrent && <div className="text-[10px] text-gray-500">giy</div>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

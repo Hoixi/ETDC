@@ -81,6 +81,8 @@ export const botApi = {
     request<{ cost: number; tokens: number }>(`/arena/${g}/${u}/reroll`, { method: "POST", body: JSON.stringify({ itemId }) }),
   arenaWheel: (g: string, u: string) =>
     request<{ reward: { type: string; amount?: number; item?: { name: string; rarity: string; iLvl: number } }; tokens: number }>(`/arena/${g}/${u}/wheel`, { method: "POST", body: JSON.stringify({}) }),
+  arenaWheelBulk: (g: string, u: string, count: number) =>
+    request<{ spins: number; spent: number; jetonGained: number; items: { name: string; rarity: string; iLvl: number }[]; tokens: number }>(`/arena/${g}/${u}/wheel-bulk`, { method: "POST", body: JSON.stringify({ count }) }),
   // Arena skill tree
   arenaSkillAllocate: (g: string, u: string, nodeId: string) =>
     request<{ skills: Record<string, number>; available: number }>(`/arena/${g}/${u}/skill/allocate`, { method: "POST", body: JSON.stringify({ nodeId }) }),

@@ -123,3 +123,44 @@ export async function spinWheel(g: string, u: string): Promise<Result<{ reward: 
 
   return { ok: true, reward, tokens: p.tokens };
 }
+
+// Toplu çark: tek seferde N çevirme (bütçe elverdiğince), ödülleri toplu uygular.
+export interface BulkWheelResult {
+  spins: number;
+  spent: number;
+  jetonGained: number;
+  items: { name: string; rarity: Rarity; iLvl: number }[];
+  tokens: number;
+}
+export async function spinWheelBulk(g: string, u: string, count: number): Promise<Result<BulkWheelResult>> {
+  const player = await prisma.arenaPlayer.findUnique({ where: where(g, u) });
+  if (!player) return { ok: false, error: "Önce `/kas` ile arenaya katıl." };
+  const afford = Math.floor(player.tokens / WHEEL_COST);
+  const n = Math.min(Math.max(1, Math.floor(count)), afford, 50); // tavan 50
+  if (n < 1) return { ok: false, error: `Yetersiz jeton (1 çevirme ${WHEEL_COST}).` };
+
+  let net = 0; // toplam jeton değişimi (maliyet dahil)
+  let jetonGained = 0;
+  const drops: ReturnType<typeof generateItem>[] = [];
+  const items: BulkWheelResult["items"] = [];
+
+  for (let i = 0; i < n; i++) {
+    net -= WHEEL_COST;
+    const r = Math.random();
+    if (r < 0.4) { const a = randInt(15, 45); net += a; jetonGained += a; }
+    else if (r < 0.7) { const d = generateItem(player.stage); drops.push(d); items.push({ name: d.name, rarity: d.rarity, iLvl: d.iLvl }); }
+    else if (r < 0.9) { const a = randInt(60, 120); net += a; jetonGained += a; }
+    else if (r < 0.99) { const d = generateItem(player.stage, 0, Rarity.EPIC); drops.push(d); items.push({ name: d.name, rarity: d.rarity, iLvl: d.iLvl }); }
+    else { const d = generateItem(player.stage, 0, Rarity.LEGENDARY); drops.push(d); items.push({ name: d.name, rarity: d.rarity, iLvl: d.iLvl }); }
+  }
+
+  const ops: Prisma.PrismaPromise<unknown>[] = [
+    prisma.arenaPlayer.update({ where: where(g, u), data: { tokens: { increment: net } } }),
+  ];
+  if (drops.length) {
+    ops.push(prisma.arenaItem.createMany({ data: drops.map((d) => ({ guildId: g, userId: u, ...d })) }));
+  }
+  const [updated] = (await prisma.$transaction(ops)) as [{ tokens: number }, ...unknown[]];
+
+  return { ok: true, spins: n, spent: n * WHEEL_COST, jetonGained, items, tokens: updated.tokens };
+}

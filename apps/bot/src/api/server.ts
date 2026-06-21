@@ -9,7 +9,7 @@ import { drawWelcomeCard } from "../features/welcome/index.js";
 import { applyPlaceholders } from "../lib/placeholders.js";
 import { invalidateGuild } from "../lib/guildConfig.js";
 import {
-  salvageItem, salvageBulk, upgradeItem, rerollItem, spinWheel, allocateSkill, respecSkills,
+  salvageItem, salvageBulk, upgradeItem, rerollItem, spinWheel, spinWheelBulk, allocateSkill, respecSkills,
   equipAbility, unequipAbility, attachAddon, detachAddon,
 } from "../features/arena/index.js";
 
@@ -185,6 +185,10 @@ export async function startApi(client: Client): Promise<void> {
   app.post<{ Params: ArenaParams }>(
     "/arena/:guildId/:userId/wheel",
     async (req, reply) => send(reply, await spinWheel(req.params.guildId, req.params.userId)),
+  );
+  app.post<{ Params: ArenaParams; Body: { count: number } }>(
+    "/arena/:guildId/:userId/wheel-bulk",
+    async (req, reply) => send(reply, await spinWheelBulk(req.params.guildId, req.params.userId, req.body.count ?? 1)),
   );
 
   // --- Arena skill tree ---
