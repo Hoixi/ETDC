@@ -121,7 +121,7 @@ export function aggregateStats(items: PlainItem[]): StatTotals {
     t.hp += Math.round(it.hp * m);
     t.spd += Math.round(it.spd * m);
     t.luck += Math.round(it.luck * m);
-    for (const a of it.affixes) t.affixes[a.type] = (t.affixes[a.type] ?? 0) + a.value;
+    for (const a of it.affixes) t.affixes[a.type] = (t.affixes[a.type] ?? 0) + Math.round(a.value * m);
   }
   return t;
 }

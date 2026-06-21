@@ -15,17 +15,23 @@ import {
 
 const STAT_CAP: Record<string, number> = { atk: 400, def: 300, hp: 3000, spd: 200, luck: 150 };
 
+// Yükseltme çarpanı: +1 yükseltme = tüm statlara %5 (affix dahil).
+const upMult = (it: PlainItem) => 1 + it.upgrade * 0.05;
+
 function primText(it: PlainItem): string {
+  const m = upMult(it);
+  const r = (v: number) => Math.round(v * m);
   const p: string[] = [];
-  if (it.atk) p.push(`ATK ${it.atk}`);
-  if (it.def) p.push(`DEF ${it.def}`);
-  if (it.hp) p.push(`HP ${it.hp}`);
-  if (it.spd) p.push(`SPD ${it.spd}`);
-  if (it.luck) p.push(`LUCK ${it.luck}`);
+  if (it.atk) p.push(`ATK ${r(it.atk)}`);
+  if (it.def) p.push(`DEF ${r(it.def)}`);
+  if (it.hp) p.push(`HP ${r(it.hp)}`);
+  if (it.spd) p.push(`SPD ${r(it.spd)}`);
+  if (it.luck) p.push(`LUCK ${r(it.luck)}`);
   return p.join(" · ");
 }
 function affixText(it: PlainItem): string {
-  return it.affixes.map((a) => `${AFFIX[a.type].label} ${a.value}${AFFIX[a.type].suffix}`).join(" · ");
+  const m = upMult(it);
+  return it.affixes.map((a) => `${AFFIX[a.type].label} ${Math.round(a.value * m)}${AFFIX[a.type].suffix}`).join(" · ");
 }
 
 // Tek bir eşyanın gücü (sıralama + picker için).
@@ -151,8 +157,13 @@ export function ArenaScreen({
       if (!res.ok) throw new Error(data.error ?? "Hata");
       if (typeof data.tokens === "number") setTok(data.tokens);
       let m = "Tamam";
-      if (action === "salvage") m = `🔥 Eritildi → +${data.gained} jeton`;
-      else if (action === "upgrade") m = data.success ? `⬆️ Başarılı! Eşya +${data.upgrade} oldu (-${data.cost} jeton)` : `💢 Yükseltme başarısız! (-${data.cost} jeton)`;
+      if (action === "salvage") {
+        setItems((prev) => prev.filter((i) => i.id !== itemId)); // eritileni listeden çıkar
+        m = `🔥 Eritildi → +${data.gained} jeton`;
+      } else if (action === "upgrade") {
+        if (data.success) setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, upgrade: data.upgrade } : i)));
+        m = data.success ? `⬆️ Başarılı! Eşya +${data.upgrade} oldu (-${data.cost} jeton)` : `💢 Yükseltme başarısız! (-${data.cost} jeton)`;
+      }
       else if (action === "reroll") m = `🎲 Özel statlar yeniden atıldı (-${data.cost} jeton)`;
       else if (action === "wheel") {
         const r = data.reward;

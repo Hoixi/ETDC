@@ -150,7 +150,7 @@ export function aggregateStats(items: ArenaItem[]): StatTotals {
     t.spd += Math.round(it.spd * mult);
     t.luck += Math.round(it.luck * mult);
     for (const a of parseAffixes(it.affixes)) {
-      t.affixes[a.type] = (t.affixes[a.type] ?? 0) + a.value;
+      t.affixes[a.type] = (t.affixes[a.type] ?? 0) + Math.round(a.value * mult);
     }
   }
   return t;
