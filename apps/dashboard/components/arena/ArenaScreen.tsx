@@ -10,7 +10,7 @@ import {
   ABILITY_CATALOG, ADDON_CATALOG, ABILITY_BY_KEY, ADDON_BY_KEY, MAX_ABILITY_SLOTS, MAX_ADDONS,
   aggregateStats, powerScore, parseSkills, availablePoints, spentPoints, pathSpent, parseAbilities,
   type PlainItem, type Slot, type AffixType, type EquipCell,
-  type Allocations, type SkillPath, type AbilityState,
+  type Allocations, type SkillPath, type AbilityState, type Rarity,
 } from "@/lib/arena";
 
 const STAT_CAP: Record<string, number> = { atk: 400, def: 300, hp: 3000, spd: 200, luck: 150 };
@@ -43,7 +43,47 @@ export function ArenaScreen({
   const [tok, setTok] = useState(tokens);
   const [skills, setSkills] = useState<Allocations>(() => parseSkills(initialSkills));
   const [abil, setAbil] = useState<AbilityState>(() => parseAbilities(initialAbilities));
+  const [bulkSel, setBulkSel] = useState<Set<Rarity>>(() => new Set<Rarity>(["COMMON", "UNCOMMON", "RARE"]));
+  const [confirmBulk, setConfirmBulk] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // Toplu erit: seçili nadirliklerdeki giyili OLMAYAN eşya sayısı.
+  const bulkCount = useMemo(
+    () => items.filter((i) => !i.equipped && bulkSel.has(i.rarity)).length,
+    [items, bulkSel],
+  );
+
+  function toggleBulk(r: Rarity) {
+    setBulkSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(r)) next.delete(r); else next.add(r);
+      return next;
+    });
+    setConfirmBulk(false);
+  }
+
+  async function bulkSalvage() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/arena/${guildId}/economy`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "salvageBulk", rarities: [...bulkSel] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Hata");
+      if (typeof data.tokens === "number") setTok(data.tokens);
+      // Eritilen (giyili olmayan, seçili nadirlik) eşyaları listeden çıkar.
+      setItems((prev) => prev.filter((i) => i.equipped || !bulkSel.has(i.rarity)));
+      setMsg({ type: "ok", text: `🔥 ${data.count} eşya eritildi → +${data.gained} jeton` });
+      setConfirmBulk(false);
+      router.refresh();
+    } catch (e) {
+      setMsg({ type: "err", text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function ability(
     action: "equip" | "unequip" | "attach" | "detach",
@@ -486,6 +526,50 @@ export function ArenaScreen({
         <button className="btn" disabled={busy || tok < 50} onClick={() => econ("wheel")}>
           🎡 Şans Çarkı (50 🎟️)
         </button>
+
+        {/* Toplu erit */}
+        <div className="mt-4 border-t border-border pt-3">
+          <div className="mb-2 text-xs font-medium text-neon-purple">🔥 Toplu Erit</div>
+          <p className="mb-2 text-[11px] text-gray-500">Nadirlik seç → o nadirlikteki <strong>giyili olmayan</strong> tüm eşyalar erir.</p>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {RARITY_ORDER.map((r) => {
+              const n = items.filter((i) => !i.equipped && i.rarity === r).length;
+              const active = bulkSel.has(r);
+              return (
+                <button
+                  key={r}
+                  onClick={() => toggleBulk(r)}
+                  className={`rounded-md border px-2 py-1 text-xs transition ${active ? "" : "opacity-50"}`}
+                  style={{
+                    borderColor: RARITY[r].color,
+                    backgroundColor: active ? `${RARITY[r].color}22` : "transparent",
+                    color: RARITY[r].color,
+                  }}
+                  title={active ? "Seçili" : "Seç"}
+                >
+                  {active ? "✓ " : ""}{RARITY[r].label} <span className="text-gray-400">({n})</span>
+                </button>
+              );
+            })}
+          </div>
+          {confirmBulk ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-red-300">{bulkCount} eşya erilecek — emin misin?</span>
+              <button className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-50"
+                disabled={busy} onClick={bulkSalvage}>Onayla 🔥</button>
+              <button className="rounded bg-bg-hover px-3 py-1 text-xs hover:bg-accent-soft"
+                disabled={busy} onClick={() => setConfirmBulk(false)}>Vazgeç</button>
+            </div>
+          ) : (
+            <button
+              className="rounded-lg bg-red-900/40 px-4 py-2 text-sm text-red-200 hover:bg-red-900/60 disabled:opacity-40"
+              disabled={busy || bulkCount === 0}
+              onClick={() => setConfirmBulk(true)}
+            >
+              🔥 Seçili nadirlikleri erit ({bulkCount})
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -62,6 +62,28 @@ export async function rerollItem(g: string, u: string, itemId: string): Promise<
   return { ok: true, cost, tokens: p.tokens };
 }
 
+// Toplu erit: seçili nadirliklerdeki GİYİLİ OLMAYAN tüm eşyaları erit.
+export async function salvageBulk(
+  g: string,
+  u: string,
+  rarities: string[],
+): Promise<Result<{ count: number; gained: number; tokens: number }>> {
+  const set = (rarities ?? []).filter((r): r is Rarity => r in RARITY);
+  if (set.length === 0) return { ok: false, error: "Nadirlik seçilmedi." };
+
+  const items = await prisma.arenaItem.findMany({
+    where: { guildId: g, userId: u, equipped: false, rarity: { in: set } },
+  });
+  if (items.length === 0) return { ok: false, error: "Eritilecek (giyili olmayan) eşya yok." };
+
+  const gained = items.reduce((s, it) => s + salvageValue(it), 0);
+  const [, player] = await prisma.$transaction([
+    prisma.arenaItem.deleteMany({ where: { id: { in: items.map((i) => i.id) } } }),
+    prisma.arenaPlayer.update({ where: where(g, u), data: { tokens: { increment: gained } } }),
+  ]);
+  return { ok: true, count: items.length, gained, tokens: player.tokens };
+}
+
 export interface WheelReward {
   type: "jeton" | "item" | "jackpot";
   amount?: number;

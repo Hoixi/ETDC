@@ -9,7 +9,7 @@ import { drawWelcomeCard } from "../features/welcome/index.js";
 import { applyPlaceholders } from "../lib/placeholders.js";
 import { invalidateGuild } from "../lib/guildConfig.js";
 import {
-  salvageItem, upgradeItem, rerollItem, spinWheel, allocateSkill, respecSkills,
+  salvageItem, salvageBulk, upgradeItem, rerollItem, spinWheel, allocateSkill, respecSkills,
   equipAbility, unequipAbility, attachAddon, detachAddon,
 } from "../features/arena/index.js";
 
@@ -169,6 +169,10 @@ export async function startApi(client: Client): Promise<void> {
   app.post<{ Params: ArenaParams; Body: { itemId: string } }>(
     "/arena/:guildId/:userId/salvage",
     async (req, reply) => send(reply, await salvageItem(req.params.guildId, req.params.userId, req.body.itemId)),
+  );
+  app.post<{ Params: ArenaParams; Body: { rarities: string[] } }>(
+    "/arena/:guildId/:userId/salvage-bulk",
+    async (req, reply) => send(reply, await salvageBulk(req.params.guildId, req.params.userId, req.body.rarities ?? [])),
   );
   app.post<{ Params: ArenaParams; Body: { itemId: string } }>(
     "/arena/:guildId/:userId/upgrade",

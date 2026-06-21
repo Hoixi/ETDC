@@ -73,6 +73,8 @@ export const botApi = {
   // Arena ekonomi
   arenaSalvage: (g: string, u: string, itemId: string) =>
     request<{ gained: number; tokens: number }>(`/arena/${g}/${u}/salvage`, { method: "POST", body: JSON.stringify({ itemId }) }),
+  arenaSalvageBulk: (g: string, u: string, rarities: string[]) =>
+    request<{ count: number; gained: number; tokens: number }>(`/arena/${g}/${u}/salvage-bulk`, { method: "POST", body: JSON.stringify({ rarities }) }),
   arenaUpgrade: (g: string, u: string, itemId: string) =>
     request<{ success: boolean; upgrade: number; cost: number; tokens: number }>(`/arena/${g}/${u}/upgrade`, { method: "POST", body: JSON.stringify({ itemId }) }),
   arenaReroll: (g: string, u: string, itemId: string) =>
